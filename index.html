@@ -357,7 +357,7 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 <!-- Nav Tabs -->
 <div class="nav-tabs">
   <div class="nav-tab active" onclick="switchTab('entry',this)">流水帳</div>
-  <div class="nav-tab" onclick="switchTab('daily',this)">每日營收</div>
+  <div class="nav-tab" onclick="switchTab('daily',this)">每日營收現收</div>
   <div class="nav-tab" onclick="switchTab('weekly',this)">業務週報</div>
   <div class="nav-tab" onclick="switchTab('annual',this)">年度業績</div>
 </div>
@@ -1155,7 +1155,7 @@ function renderDaily() {
     ${deptBars}
     ${manualSection}
     <p style="font-size:11px;color:var(--color-text-tertiary);margin:4px 0 14px;padding-left:4px"><span>ℹ</span> 月目標請至「年度業績」分頁設定</p>
-    <div class="section-title"><span>📅</span> 每日營收明細</div>
+    <div class="section-title"><span>📅</span> 每日現收明細</div>
     <div class="daily-grid">
       <div class="daily-col">
         <div class="daily-col-hdr">${state.month}/1 — ${state.month}/10</div>
