@@ -292,7 +292,7 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 .annual-table td { padding:9px 12px;border-bottom:1px solid var(--color-border-light);text-align:right;white-space:nowrap; }
 .annual-table td:first-child { text-align:left;font-weight:600;font-size:12px; }
 .annual-table tr:hover td { background:var(--color-bg); }
-.annual-table .target-input { width:100px;font-size:12px;text-align:right;padding:4px 6px; }
+.annual-table .target-input { width:72px;font-size:12px;text-align:right;padding:4px 6px; }
 .annual-table .actual-cell.over { color:var(--color-green);font-weight:700; }
 .annual-table .actual-cell.under { color:var(--color-text-primary); }
 .annual-table .rate-cell { font-size:12px;font-weight:600; }
@@ -1418,8 +1418,15 @@ function renderAnnual() {
 
     rows += `<tr class="${rowClass}">
       <td>${MONTHS[m-1]}${isCurrent?' ◀':''}</td>
-      <td><input type="number" class="target-input" value="${target||''}" placeholder="—"
-        onchange="saveAnnualTarget('${annualDept}',${m},this.value)"></td>
+      <td style="position:relative">
+        <input type="number" class="target-input" 
+          value="${target>0?(target/10000):''}" 
+          placeholder="—"
+          step="0.1"
+          title="輸入萬為單位，例如輸入 100 = 100萬"
+          onchange="saveAnnualTarget('${annualDept}',${m},this.value)">
+        <span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--color-text-tertiary);pointer-events:none">萬</span>
+      </td>
       ${cashCell}
       ${revenueCell}
       ${diffCell}
@@ -1526,7 +1533,7 @@ function renderAnnual() {
       <thead>
         <tr>
           <th style="text-align:left">月份</th>
-          <th>月目標</th>
+          <th>月目標（萬）</th>
           <th>現金收入</th>
           <th>營業收入</th>
           <th>差額</th>
@@ -1557,10 +1564,12 @@ function saveAnnualTarget(dept, month, val) {
   const store = dept === '國圖' ? 'guotu' : 'flagship';
   const tgt = getMonthTargets(store, month);
   const key = dept === '2F' ? '_2f' : dept === '4F' ? '_4f' : '_store';
-  tgt[key] = parseFloat(val) || 0;
+  // 輸入以萬為單位，儲存時乘以 10000
+  const wan = parseFloat(val) || 0;
+  tgt[key] = Math.round(wan * 10000);
   save();
+  syncToFirebase(true);
   renderAnnual();
-  // Also refresh daily if visible
   const active = document.querySelector('.tab-content.active');
   if (active && active.id === 'tab-daily') renderDaily();
 }
