@@ -697,7 +697,7 @@ function startFirebaseListener() {
     if (changed) {
       retagRecordWeeks();
       localStorage.setItem('salesRecords', JSON.stringify(state.records));
-      renderAll();
+      renderAllPreserveForm();
       syncStatus = 'live';
       updateSyncDot();
     }
@@ -2116,6 +2116,72 @@ function changeMonth(m) {
   state.weekIdx = 0;
   renderAll();
 }
+// 表單欄位 id 清單
+const FORM_FIELDS = ['f-date','f-dept','f-category','f-source','f-staff','f-customer',
+  'f-amount','f-pay','f-paydetail','f-inv','f-note','f-amount2','f-pay2','f-paydetail2'];
+
+function isFormDirty() {
+  // 判斷新增表單是否有人正在輸入
+  const customer = document.getElementById('f-customer');
+  const amount = document.getElementById('f-amount');
+  const inv = document.getElementById('f-inv');
+  if (!customer) return false;
+  return (customer.value && customer.value.trim() !== '') ||
+         (amount && amount.value && parseFloat(amount.value) > 0) ||
+         (inv && inv.value && inv.value.trim() !== '');
+}
+
+function saveFormState() {
+  const state_form = {};
+  FORM_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) state_form[id] = el.value;
+  });
+  // 也記錄第二筆付款是否展開
+  const splitBlock = document.getElementById('split-pay-block');
+  state_form['_splitOpen'] = splitBlock && splitBlock.classList.contains('visible');
+  return state_form;
+}
+
+function restoreFormState(saved) {
+  if (!saved) return;
+  FORM_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && saved[id] !== undefined) el.value = saved[id];
+  });
+  if (saved['_splitOpen']) {
+    const block = document.getElementById('split-pay-block');
+    if (block) block.classList.add('visible');
+  }
+}
+
+function renderAllPreserveForm() {
+  // 若有人正在填寫表單，保存後再還原
+  const dirty = isFormDirty();
+  const saved = dirty ? saveFormState() : null;
+  renderAll();
+  if (dirty && saved) {
+    restoreFormState(saved);
+    // 顯示提示
+    showSyncToast();
+  }
+}
+
+let syncToastTimer = null;
+function showSyncToast() {
+  let el = document.getElementById('sync-preserve-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sync-preserve-toast';
+    el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1A1916;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:9999;pointer-events:none;transition:opacity 0.3s';
+    document.body.appendChild(el);
+  }
+  el.textContent = '📡 雲端有新資料，表單內容已保留';
+  el.style.opacity = '1';
+  clearTimeout(syncToastTimer);
+  syncToastTimer = setTimeout(() => { el.style.opacity = '0'; }, 3000);
+}
+
 function renderAll() {
   const active = document.querySelector('.tab-content.active');
   if (!active) return;
