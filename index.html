@@ -413,7 +413,7 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
   <div class="nav-tab active" onclick="switchTab('entry',this)">流水帳</div>
   <div class="nav-tab" onclick="switchTab('daily',this)">每日營收現收</div>
   <div class="nav-tab" onclick="switchTab('weekly',this)">業務週報</div>
-  <div class="nav-tab" onclick="switchTab('consumption',this)">耗課登記</div>
+  <div class="nav-tab" onclick="switchTab('consumption',this)">營收登記</div>
   <div class="nav-tab" onclick="switchTab('annual',this)">年度業績</div>
 </div>
 
@@ -1561,28 +1561,36 @@ function renderDaily() {
   const s2 = Array.from({length:10},(_,i)=>dayTotal(i+11)).reduce((a,b)=>a+b,0);
   const s3 = Array.from({length:days2-20},(_,i)=>dayTotal(i+21)).reduce((a,b)=>a+b,0);
 
+  // ── 合併 KPI 卡片（本月現金收入 + 業績剩餘 + 全館達成率）──
+  const surplusLabel2 = storeTarget === 0 ? '未設目標' : diff >= 0 ? `超出 +$${fmt(diff)} 🎉` : `尚差 $${fmt(-diff)}`;
+  const surplusColor2 = storeTarget === 0 ? 'var(--color-text-tertiary)' : diff >= 0 ? 'var(--color-green)' : 'var(--color-red)';
+
   document.getElementById('tab-daily').innerHTML = `
     <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">本月現金收入</div>
-        <div class="kpi-value">$${fmt(cashTotal)}</div>
-        <div class="kpi-sublabel" style="color:var(--color-text-tertiary);font-size:10px">流水帳匯總</div>
+      <div class="kpi-card" style="grid-column:1/-1">
+        <div style="display:flex;align-items:stretch;gap:0;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px;padding-right:16px">
+            <div class="kpi-label">本月現金收入</div>
+            <div class="kpi-value">$${fmt(cashTotal)}</div>
+            <div style="font-size:10px;color:var(--color-text-tertiary);margin-top:2px">流水帳匯總</div>
+          </div>
+          <div style="width:1px;background:var(--color-border);margin:0 16px 0 0;align-self:stretch;min-height:48px"></div>
+          <div style="flex:1;min-width:140px;padding-right:16px">
+            <div class="kpi-label">業績剩餘</div>
+            <div class="kpi-value" style="color:${surplusColor2};font-size:18px">${storeTarget===0?'未設目標':surplusLabel2}</div>
+            ${storeTarget>0?`<div style="font-size:10px;color:var(--color-text-tertiary);margin-top:2px">目標 $${fmt(storeTarget)}</div>`:''}
+          </div>
+          <div style="width:1px;background:var(--color-border);margin:0 16px 0 0;align-self:stretch;min-height:48px"></div>
+          <div style="flex:1;min-width:140px">
+            <div class="kpi-label">全館達成率</div>
+            <div class="kpi-value" style="color:${rateColor(rate)}">${fmtRate(rate)}</div>
+            ${storeTarget>0?`<div style="height:5px;border-radius:3px;background:var(--color-border);overflow:hidden;margin-top:6px"><div style="height:100%;width:${Math.min(100,(rate||0)*100)}%;background:${rateBarColor(rate)};border-radius:3px;transition:width .4s"></div></div>`:''}
+          </div>
+        </div>
       </div>
-      ${surplusCard}
       ${kpiCards}
-      <div class="kpi-card">
-        <div class="kpi-label">全館達成率</div>
-        <div class="kpi-value" style="color:${rateColor(rate)}">${fmtRate(rate)}</div>
-        ${storeTarget>0?`
-          <div style="margin-top:6px">
-            <div style="height:6px;border-radius:3px;background:var(--color-border);overflow:hidden">
-              <div style="height:100%;width:${Math.min(100,(rate||0)*100)}%;background:${rateBarColor(rate)};border-radius:3px;transition:width .4s"></div>
-            </div>
-            <div class="kpi-sublabel" style="margin-top:4px">目標 $${fmt(storeTarget)}</div>
-          </div>`:''}
-      </div>
     </div>
-    <p style="font-size:11px;color:var(--color-text-tertiary);margin:4px 0 14px;padding-left:4px"><span>ℹ</span> 月目標請至「年度業績」設定；耗課詳情請至「耗課登記」分頁</p>
+    <p style="font-size:11px;color:var(--color-text-tertiary);margin:4px 0 14px;padding-left:4px"><span>ℹ</span> 月目標請至「年度業績」設定；耗課詳情請至「營收登記」分頁</p>
     <div class="section-title"><span>📅</span> 每日現收明細</div>
     <div class="daily-grid">
       <div class="daily-col">
@@ -2499,9 +2507,11 @@ function saveEdit() {
     rec.amount = a1;
   }
   rec.week = getWeekForDate(rec.month, rec.day);
-  save(); renderAll();
+  save();
+  syncToFirebase(true);
+  renderAll();
   closeEditModal();
-  showToast('✓ 已更新記錄');
+  showToast('✓ 已更新記錄，同步至雲端');
 }
 
 // ── Download Excel functions ──
@@ -2886,15 +2896,15 @@ function renderConsumption() {
       <div class="ct-kpi">
         <div class="ct-kpi-label">2F 教學人次</div>
         <div class="ct-kpi-value">${total2fHead} <span style="font-size:14px;font-weight:400">人</span></div>
-        <div class="ct-kpi-sub">耗課 $${fmt(total2fRev)}</div>
+        <div class="ct-kpi-sub">營收 $${fmt(total2fRev)}</div>
       </div>
       <div class="ct-kpi">
         <div class="ct-kpi-label">4F 教學人次</div>
         <div class="ct-kpi-value">${total4fHead} <span style="font-size:14px;font-weight:400">人</span></div>
-        <div class="ct-kpi-sub">新客 ${total4fNew} ／ 舊客 ${total4fOld}　耗課 $${fmt(total4fRev)}</div>
+        <div class="ct-kpi-sub">新客 ${total4fNew} ／ 舊客 ${total4fOld}　營收 $${fmt(total4fRev)}</div>
       </div>
       <div class="ct-kpi">
-        <div class="ct-kpi-label">全館耗課營收</div>
+        <div class="ct-kpi-label">全館營收</div>
         <div class="ct-kpi-value">$${fmt(total2fRev + total4fRev)}</div>
         <div class="ct-kpi-sub">總人次 ${total2fHead + total4fHead} 人</div>
       </div>
@@ -2906,7 +2916,7 @@ function renderConsumption() {
         <div class="ct-kpi-sub">新客 ${totalKgNew} ／ 舊客 ${totalKgOld}</div>
       </div>
       <div class="ct-kpi">
-        <div class="ct-kpi-label">國圖 耗課營收</div>
+        <div class="ct-kpi-label">國圖 營收</div>
         <div class="ct-kpi-value">$${fmt(totalKgRev)}</div>
         <div class="ct-kpi-sub">本月合計</div>
       </div>
@@ -2915,128 +2925,148 @@ function renderConsumption() {
   // ── 2F 設定區（僅旗艦館） ──
   const setting2fHtml = isFlagship ? `
     <div class="ct-section-card">
-      <div class="ct-section-title"><span>🏫</span> 2F 耗課設定</div>
+      <div class="ct-section-title"><span>🏫</span> 2F Excel 匯入</div>
       <div class="ct-setting-bar">
-        <label style="font-weight:600">每人次平均單價</label>
-        <input type="number" class="ct-input wide" value="${price2f||''}" placeholder="例：450"
-          onchange="saveConsumptionSetting(${month},'price2f',this.value)" style="width:100px">
-        <span style="color:var(--color-text-tertiary)">元（0 = 使用 Excel 原始金額）</span>
-        <button class="btn-secondary" onclick="trigger2fImport()" style="font-size:12px;padding:5px 12px;margin-left:auto">
-          <span>📂</span> 匯入 Excel
+        <button class="btn-secondary" onclick="trigger2fImport()" style="font-size:12px;padding:5px 12px">
+          <span>📂</span> 匯入 Excel 報表
         </button>
-        ${has2fData ? `<span style="font-size:12px;color:var(--color-green)">✓ 已匯入 ${total2fHead} 人次</span>
+        ${has2fData ? `<span style="font-size:12px;color:var(--color-green)">✓ 已匯入 ${total2fHead} 人次，$${fmt(total2fRev)}</span>
         <button onclick="clear2fImport(${month})" style="font-size:11px;padding:4px 8px;border:1px solid var(--color-red);color:var(--color-red);background:none;border-radius:6px;cursor:pointer">清除</button>`
         : `<span style="font-size:12px;color:var(--color-text-tertiary)">尚未匯入本月資料</span>`}
       </div>
     </div>` : '';
 
-  // ── 每日明細表格 ──
-  function makeRows() {
-    let rows = '';
-    for (let d=1; d<=days; d++) {
-      const dateObj = new Date(today.getFullYear(), month-1, d);
-      const wd = WEEKDAYS_TW[dateObj.getDay()];
-      const isToday = d === todayDay;
-      const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
-
-      if (isFlagship) {
-        const d2 = data2f[d] || {};
-        const head2f = d2.head2f || 0;
-        const rev2f = price2f > 0 ? head2f * price2f : (d2.rev2f || 0);
-
-        const d4 = getDailyRev('flagship', month, d);
-        const new4f = d4.new4f || 0;
-        const old4f = d4.old4f || 0;
-        const head4f = new4f + old4f;
-        const rev4f  = d4.rev4f || 0;
-
-        rows += `<tr class="${isToday?'ct-today':''}" style="${isWeekend?'opacity:.6':''}">
-          <td class="ct-date-col">${month}/${d}<span class="ct-weekday">週${wd}</span></td>
-          <td>${head2f > 0 ? `<span class="ct-val">${head2f}</span>` : '<span class="ct-dash">—</span>'}</td>
-          <td>${rev2f  > 0 ? `<span class="ct-val">$${fmt(rev2f)}</span>`  : '<span class="ct-dash">—</span>'}</td>
-          <td><input type="number" class="ct-input" value="${new4f||''}" placeholder="—" min="0"
-            onchange="setDailyRev('flagship',${month},${d},'new4f',this.value)"></td>
-          <td><input type="number" class="ct-input" value="${old4f||''}" placeholder="—" min="0"
-            onchange="setDailyRev('flagship',${month},${d},'old4f',this.value)"></td>
-          <td>${head4f > 0 ? `<span class="ct-val">${head4f}</span>` : '<span class="ct-dash">—</span>'}</td>
-          <td><input type="number" class="ct-input wide" value="${rev4f||''}" placeholder="—" min="0"
-            onchange="setDailyRev('flagship',${month},${d},'rev4f',this.value)"></td>
-        </tr>`;
-      } else {
-        const dg = getDailyRev('guotu', month, d);
-        const newKg  = dg.newKg  || 0;
-        const oldKg  = dg.oldKg  || 0;
-        const headKg = newKg + oldKg;
-        const revKg  = dg.revKg  || 0;
-
-        rows += `<tr class="${isToday?'ct-today':''}" style="${isWeekend?'opacity:.6':''}">
-          <td class="ct-date-col">${month}/${d}<span class="ct-weekday">週${wd}</span></td>
-          <td><input type="number" class="ct-input" value="${newKg||''}" placeholder="—" min="0"
-            onchange="setDailyRev('guotu',${month},${d},'newKg',this.value)"></td>
-          <td><input type="number" class="ct-input" value="${oldKg||''}" placeholder="—" min="0"
-            onchange="setDailyRev('guotu',${month},${d},'oldKg',this.value)"></td>
-          <td>${headKg > 0 ? `<span class="ct-val">${headKg}</span>` : '<span class="ct-dash">—</span>'}</td>
-          <td><input type="number" class="ct-input wide" value="${revKg||''}" placeholder="—" min="0"
-            onchange="setDailyRev('guotu',${month},${d},'revKg',this.value)"></td>
-        </tr>`;
+  // ── 三欄卡片式明細 helper ──
+  function makeCardCols(colData) {
+    // colData: array of {date, label, items, subtotal}
+    // each column: days 1-10, 11-20, 21-end
+    let cols = '';
+    for (const col of colData) {
+      let rows = '';
+      for (const item of col.items) {
+        const isToday = item.d === todayDay;
+        const isWeekend = new Date(today.getFullYear(), month-1, item.d).getDay() % 6 === 0 && new Date(today.getFullYear(), month-1, item.d).getDay() !== 1;
+        rows += `<div class="daily-row${isToday?' today':''}" style="${isWeekend?'opacity:.65':''}">
+          <span class="daily-date">${month}/${item.d}${isToday?' 🔴':''}</span>
+          <span class="daily-amt${item.hasVal?'':' zero'}">${item.display}</span>
+        </div>`;
       }
+      cols += `<div class="daily-col">
+        <div class="daily-col-hdr">${col.label}</div>
+        ${rows}
+        <div class="subtotal-row"><span>小計</span><span>${col.subtotal > 0 ? '$'+fmt(col.subtotal) : '—'}</span></div>
+      </div>`;
     }
-    return rows;
+    return cols;
   }
 
-  const flagshipHeader = `<tr>
-    <th>日期</th>
-    <th>2F 人次<br><small style="font-weight:400">（匯入）</small></th>
-    <th>2F 耗課金額</th>
-    <th>4F 新客</th>
-    <th>4F 舊客</th>
-    <th>4F 人次</th>
-    <th>4F 耗課金額</th>
-  </tr>`;
+  // ── 2F 卡片資料（Excel 匯入） ──
+  function make2fCardData() {
+    const cols = [
+      { label: `${month}/1 — ${month}/10`, items: [], subtotal: 0 },
+      { label: `${month}/11 — ${month}/20`, items: [], subtotal: 0 },
+      { label: `${month}/21 — ${month}/${days}`, items: [], subtotal: 0 },
+    ];
+    for (let d=1; d<=days; d++) {
+      const d2 = data2f[d] || {};
+      const head2f = d2.head2f || 0;
+      const rev2f = price2f > 0 ? head2f * price2f : (d2.rev2f || 0);
+      const hasVal = head2f > 0 || rev2f > 0;
+      const display = hasVal ? `${head2f}人 $${fmt(rev2f)}` : '—';
+      const col = d <= 10 ? cols[0] : d <= 20 ? cols[1] : cols[2];
+      col.items.push({ d, hasVal, display });
+      col.subtotal += rev2f;
+    }
+    return cols;
+  }
 
-  const guotuHeader = `<tr>
-    <th>日期</th>
-    <th>新客人次</th>
-    <th>舊客人次</th>
-    <th>教學人次</th>
-    <th>耗課金額</th>
-  </tr>`;
+  // ── 4F 卡片資料（Firebase dailyRevenue） ──
+  function make4fCardData() {
+    const cols = [
+      { label: `${month}/1 — ${month}/10`, items: [], subtotal: 0 },
+      { label: `${month}/11 — ${month}/20`, items: [], subtotal: 0 },
+      { label: `${month}/21 — ${month}/${days}`, items: [], subtotal: 0 },
+    ];
+    for (let d=1; d<=days; d++) {
+      const d4 = getDailyRev('flagship', month, d);
+      const new4f = d4.new4f || 0;
+      const old4f = d4.old4f || 0;
+      const head4f = new4f + old4f;
+      const rev4f = d4.rev4f || 0;
+      const hasVal = head4f > 0 || rev4f > 0;
+      const display = hasVal ? `${head4f}人 $${fmt(rev4f)}` : '—';
+      const col = d <= 10 ? cols[0] : d <= 20 ? cols[1] : cols[2];
+      col.items.push({ d, hasVal, display });
+      col.subtotal += rev4f;
+    }
+    return cols;
+  }
 
-  const footerRow = isFlagship ? `<tr class="ct-subtotal">
-    <td>月合計</td>
-    <td>${total2fHead > 0 ? total2fHead+'人' : '—'}</td>
-    <td>${total2fRev  > 0 ? '$'+fmt(total2fRev)  : '—'}</td>
-    <td>${total4fNew  > 0 ? total4fNew  : '—'}</td>
-    <td>${total4fOld  > 0 ? total4fOld  : '—'}</td>
-    <td>${total4fHead > 0 ? total4fHead+'人' : '—'}</td>
-    <td>${total4fRev  > 0 ? '$'+fmt(total4fRev)  : '—'}</td>
-  </tr>` : `<tr class="ct-subtotal">
-    <td>月合計</td>
-    <td>${totalKgNew  > 0 ? totalKgNew  : '—'}</td>
-    <td>${totalKgOld  > 0 ? totalKgOld  : '—'}</td>
-    <td>${totalKgHead > 0 ? totalKgHead+'人' : '—'}</td>
-    <td>${totalKgRev  > 0 ? '$'+fmt(totalKgRev)  : '—'}</td>
-  </tr>`;
+  // ── 國圖 卡片資料（手動登記） ──
+  function makeKgCardData() {
+    const cols = [
+      { label: `${month}/1 — ${month}/10`, items: [], subtotal: 0 },
+      { label: `${month}/11 — ${month}/20`, items: [], subtotal: 0 },
+      { label: `${month}/21 — ${month}/${days}`, items: [], subtotal: 0 },
+    ];
+    for (let d=1; d<=days; d++) {
+      const dg = getDailyRev('guotu', month, d);
+      const newKg = dg.newKg || 0;
+      const oldKg = dg.oldKg || 0;
+      const headKg = newKg + oldKg;
+      const revKg = dg.revKg || 0;
+      const hasVal = headKg > 0 || revKg > 0;
+      const display = hasVal ? `${headKg}人 $${fmt(revKg)}` : '—';
+      const col = d <= 10 ? cols[0] : d <= 20 ? cols[1] : cols[2];
+      col.items.push({ d, hasVal, display });
+      col.subtotal += revKg;
+    }
+    return cols;
+  }
+
+
+  const flagship2fSection = isFlagship ? `
+    <div class="ct-section-card">
+      <div class="ct-section-title"><span>🏫</span> 2F 每日營收明細
+        <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);margin-left:4px">由 Excel 匯入自動帶入</span>
+      </div>
+      <div class="daily-grid">${makeCardCols(make2fCardData())}</div>
+      <div class="total-banner" style="margin-top:10px">
+        <span class="total-banner-label">2F ${month}月 營收合計</span>
+        <span class="total-banner-value">$${fmt(total2fRev)}</span>
+      </div>
+    </div>` : '';
+
+  const flagship4fSection = isFlagship ? `
+    <div class="ct-section-card">
+      <div class="ct-section-title"><span>🎨</span> 4F 每日營收明細
+        <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);margin-left:4px">從資料庫截取</span>
+      </div>
+      <div class="daily-grid">${makeCardCols(make4fCardData())}</div>
+      <div class="total-banner" style="margin-top:10px">
+        <span class="total-banner-label">4F ${month}月 營收合計</span>
+        <span class="total-banner-value">$${fmt(total4fRev)}</span>
+      </div>
+    </div>` : '';
+
+  const guotuSection = !isFlagship ? `
+    <div class="ct-section-card">
+      <div class="ct-section-title"><span>📋</span> 國圖館 每日營收明細
+        <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);margin-left:4px">手動逐日登記</span>
+      </div>
+      <div class="daily-grid">${makeCardCols(makeKgCardData())}</div>
+      <div class="total-banner" style="margin-top:10px">
+        <span class="total-banner-label">國圖 ${month}月 營收合計</span>
+        <span class="total-banner-value">$${fmt(totalKgRev)}</span>
+      </div>
+    </div>` : '';
 
   document.getElementById('tab-consumption').innerHTML = `
     ${kpiHtml}
     ${setting2fHtml}
-    <div class="ct-section-card">
-      <div class="ct-section-title">
-        <span>${isFlagship ? '📋' : '📋'}</span>
-        ${isFlagship ? '旗艦館 每日耗課明細' : '國圖館 每日耗課明細'}
-        <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);margin-left:4px">
-          ${isFlagship ? '2F 人次由 Excel 匯入自動帶入；4F 手動登記' : '手動逐日登記'}
-        </span>
-      </div>
-      <div style="overflow-x:auto">
-      <table class="ct-table">
-        <thead>${isFlagship ? flagshipHeader : guotuHeader}</thead>
-        <tbody>${makeRows()}</tbody>
-        <tfoot>${footerRow}</tfoot>
-      </table>
-      </div>
-    </div>`;
+    ${flagship2fSection}
+    ${flagship4fSection}
+    ${guotuSection}`;
 }
 
 </script>
