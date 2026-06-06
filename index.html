@@ -3115,3 +3115,159 @@ async function renderConsumption() {
     : '<div style="color:var(--color-text-tertiary);font-size:13px;padding:12px 0">本月尚無薪資系統資料</div>'
   ) : '';
 
+  // ── 國圖資料（手動）──
+  let totalKgNew=0, totalKgOld=0, totalKgHead=0, totalKgRev=0;
+  for (let d=1; d<=days; d++) {
+    const g = getDailyRev('guotu', month, d);
+    totalKgNew  += g.newKg||0; totalKgOld += g.oldKg||0;
+    totalKgHead += (g.newKg||0)+(g.oldKg||0); totalKgRev += g.revKg||0;
+  }
+
+  // ── KPI ──
+  const kpiHtml = isFlagship ? `
+    <div class="ct-kpi-row">
+      <div class="ct-kpi"><div class="ct-kpi-label">2F 教學人次</div><div class="ct-kpi-value">${total2fHead}<span style="font-size:14px;font-weight:400"> 人</span></div><div class="ct-kpi-sub">耗課 $${fmt(total2fRev)}</div></div>
+      <div class="ct-kpi"><div class="ct-kpi-label">4F 教學人次</div><div class="ct-kpi-value">${total4fHead}<span style="font-size:14px;font-weight:400"> 人</span></div><div class="ct-kpi-sub">新客 ${total4fNew} ／ 舊客 ${total4fOld}　耗課 $${fmt(total4fRev)}</div></div>
+      <div class="ct-kpi"><div class="ct-kpi-label">全館耗課營收</div><div class="ct-kpi-value">$${fmt(total2fRev+total4fRev)}</div><div class="ct-kpi-sub">總人次 ${total2fHead+total4fHead} 人</div></div>
+    </div>` : `
+    <div class="ct-kpi-row">
+      <div class="ct-kpi"><div class="ct-kpi-label">國圖 教學人次</div><div class="ct-kpi-value">${totalKgHead}<span style="font-size:14px;font-weight:400"> 人</span></div><div class="ct-kpi-sub">新客 ${totalKgNew} ／ 舊客 ${totalKgOld}</div></div>
+      <div class="ct-kpi"><div class="ct-kpi-label">國圖 耗課營收</div><div class="ct-kpi-value">$${fmt(totalKgRev)}</div><div class="ct-kpi-sub">本月合計</div></div>
+    </div>`;
+
+  // ── 2F 設定列 ──
+  const setting2fHtml = isFlagship ? `
+    <div class="ct-setting-bar" style="margin-bottom:12px">
+      <label style="font-weight:600;font-size:12px">每人次單價</label>
+      <input type="number" class="ct-input" value="${price2f||''}" placeholder="0（用Excel原始金額）" min="0"
+        onchange="saveConsumptionSetting(${month},'price2f',this.value)" style="width:120px">
+      <span style="font-size:11px;color:var(--color-text-tertiary)">元</span>
+      <button class="btn-secondary" onclick="trigger2fImport()" style="font-size:12px;padding:5px 12px;margin-left:auto">📂 匯入 Excel</button>
+      ${has2fData
+        ? `<span style="font-size:12px;color:var(--color-green)">✓ ${total2fHead}人次 已匯入</span>
+           <button onclick="clear2fImport(${month})" style="font-size:11px;padding:3px 8px;border:1px solid var(--color-red);color:var(--color-red);background:none;border-radius:5px;cursor:pointer">清除</button>`
+        : `<span style="font-size:12px;color:var(--color-text-tertiary)">尚未匯入</span>`}
+    </div>` : '';
+
+  // ── 4F 重新整理列 ──
+  const conn4fBar = isFlagship ? `
+    <div class="ct-setting-bar" style="margin-bottom:12px">
+      <span style="font-size:12px;color:var(--color-green)">● 自動從薪資系統同步</span>
+      <button class="btn-secondary" onclick="renderConsumption()" style="font-size:11px;padding:3px 8px;margin-left:auto">↻ 重新整理</button>
+    </div>` : '';
+
+  // ── 三欄卡片式 ──
+  function makeCardCols(getCellFn) {
+    let col1='', col2='', col3='';
+    let s1=0, s2=0, s3=0;
+    for (let d=1; d<=days; d++) {
+      const dateObj = new Date(today.getFullYear(), month-1, d);
+      const wd = WEEKDAYS_TW[dateObj.getDay()];
+      const isWeekend = dateObj.getDay()===0 || dateObj.getDay()===6;
+      const isToday2 = d === todayDay;
+      const {display, amount} = getCellFn(d);
+      const rowCls = `daily-row${isToday2?' today':''}`;
+      const style  = isWeekend ? 'opacity:.55' : '';
+      const cell   = `<div class="${rowCls}" style="${style}">
+        <span class="daily-date">${month}/${d} <span style="font-size:10px;color:var(--color-text-tertiary)">週${wd}</span></span>
+        <span class="daily-amt${amount===0?' zero':''}">${display}</span>
+      </div>`;
+      if (d<=10)      { col1 += cell; s1 += amount; }
+      else if (d<=20) { col2 += cell; s2 += amount; }
+      else            { col3 += cell; s3 += amount; }
+    }
+    const totalAmt = s1+s2+s3;
+    return `
+      <div class="daily-grid">
+        <div class="daily-col">
+          <div class="daily-col-hdr">${month}/1 — ${month}/10</div>${col1}
+          <div class="subtotal-row"><span>小計</span><span>${s1>0?'$'+fmt(s1):'$0'}</span></div>
+        </div>
+        <div class="daily-col">
+          <div class="daily-col-hdr">${month}/11 — ${month}/20</div>${col2}
+          <div class="subtotal-row"><span>小計</span><span>${s2>0?'$'+fmt(s2):'$0'}</span></div>
+        </div>
+        <div class="daily-col">
+          <div class="daily-col-hdr">${month}/21 — ${month}/${days}</div>${col3}
+          <div class="subtotal-row"><span>小計</span><span>${s3>0?'$'+fmt(s3):'$0'}</span></div>
+        </div>
+      </div>
+      <div class="total-banner">
+        <span class="total-banner-label">${month}月 合計</span>
+        <span class="total-banner-value">$${fmt(totalAmt)}</span>
+      </div>`;
+  }
+
+  // 2F 卡片
+  const grid2f = makeCardCols(d => {
+    const r = data2f[d]||{};
+    const h = r.head2f||0;
+    const rev = price2f>0 ? h*price2f : (r.rev2f||0);
+    return { display: rev>0 ? `$${fmt(rev)}<span style="font-size:10px;color:var(--color-text-tertiary);margin-left:4px">${h}人</span>` : '—', amount: rev };
+  });
+
+  // 國圖手動輸入
+  const kgInputBlock = !isFlagship ? `
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;color:var(--color-text-tertiary);margin-bottom:8px">點選日期展開登記欄位</div>
+      ${Array.from({length:days},(_,i)=>{
+        const d = i+1;
+        const g = getDailyRev('guotu', month, d);
+        const newKg=g.newKg||0, oldKg=g.oldKg||0, revKg=g.revKg||0;
+        const hasData = newKg||oldKg||revKg;
+        const dateObj2 = new Date(today.getFullYear(), month-1, d);
+        const wd2 = WEEKDAYS_TW[dateObj2.getDay()];
+        return `<details style="border:1px solid var(--color-border);border-radius:6px;margin-bottom:4px;overflow:hidden" ${d===todayDay?'open':''}>
+          <summary style="padding:8px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:space-between;background:var(--color-bg)">
+            <span><strong>${month}/${d}</strong> 週${wd2}</span>
+            <span style="font-size:12px;color:${hasData?'var(--color-green)':'var(--color-text-tertiary)'}">
+              ${hasData?`${newKg+oldKg}人　$${fmt(revKg)}`:'未登記'}
+            </span>
+          </summary>
+          <div style="padding:10px 12px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:13px">
+            <label>新客 <input type="number" class="ct-input" value="${newKg||''}" placeholder="0" min="0"
+              onchange="setDailyRev('guotu',${month},${d},'newKg',this.value);renderConsumption()"></label>
+            <label>舊客 <input type="number" class="ct-input" value="${oldKg||''}" placeholder="0" min="0"
+              onchange="setDailyRev('guotu',${month},${d},'oldKg',this.value);renderConsumption()"></label>
+            <label>耗課金額 <input type="number" class="ct-input wide" value="${revKg||''}" placeholder="0" min="0"
+              onchange="setDailyRev('guotu',${month},${d},'revKg',this.value);renderConsumption()"></label>
+          </div>
+        </details>`;
+      }).join('')}
+    </div>` : '';
+
+  const gridKg = !isFlagship ? makeCardCols(d => {
+    const g = getDailyRev('guotu', month, d);
+    const head = (g.newKg||0)+(g.oldKg||0);
+    const rev  = g.revKg||0;
+    return { display: head>0||rev>0
+      ? `${rev>0?'$'+fmt(rev):'—'}<span style="font-size:10px;color:var(--color-text-tertiary);margin-left:4px">${head>0?head+'人':''}</span>`
+      : '—', amount: rev };
+  }) : '';
+
+  document.getElementById('tab-consumption').innerHTML = `
+    ${kpiHtml}
+    ${isFlagship ? `
+      <div class="ct-section-card">
+        <div class="ct-section-title"><span>🏫</span> 2F 每日營收明細</div>
+        ${setting2fHtml}
+        ${grid2f}
+      </div>
+      <div class="ct-section-card">
+        <div class="ct-section-title"><span>🎨</span> 4F 每日營收明細
+          <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary)">資料來源：薪資系統</span>
+        </div>
+        ${conn4fBar}
+        ${grid4f}
+      </div>
+    ` : `
+      <div class="ct-section-card">
+        <div class="ct-section-title"><span>📚</span> 國圖館 每日營收明細</div>
+        ${kgInputBlock}
+        ${gridKg}
+      </div>
+    `}`;
+}
+</script>
+</body>
+</html>
