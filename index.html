@@ -1603,33 +1603,20 @@ function renderDaily() {
   const s2 = Array.from({length:10},(_,i)=>dayTotal(i+11)).reduce((a,b)=>a+b,0);
   const s3 = Array.from({length:days2-20},(_,i)=>dayTotal(i+21)).reduce((a,b)=>a+b,0);
 
-  // ── 合併 KPI 卡片（本月現金收入 + 業績剩餘 + 全館達成率）──
-  const surplusLabel2 = storeTarget === 0 ? '未設目標' : diff >= 0 ? `超出 +$${fmt(diff)} 🎉` : `尚差 $${fmt(-diff)}`;
   const surplusColor2 = storeTarget === 0 ? 'var(--color-text-tertiary)' : diff >= 0 ? 'var(--color-green)' : 'var(--color-red)';
+  const surplusLabel2 = storeTarget === 0 ? '尚未設定目標' : diff >= 0 ? `超出 +$${fmt(diff)} 🎉` : `尚差 $${fmt(-diff)}`;
+
+  const combinedCard = `
+    <div class="kpi-card">
+      <div class="kpi-label">本月現金收入</div>
+      <div class="kpi-value">$${fmt(cashTotal)}</div>
+      <div style="font-size:13px;font-weight:600;color:${rateColor(rate)};margin-top:4px">${fmtRate(rate)}</div>
+      <div style="font-size:11px;color:${surplusColor2};margin-top:3px">${surplusLabel2}</div>
+    </div>`;
 
   document.getElementById('tab-daily').innerHTML = `
     <div class="kpi-grid">
-      <div class="kpi-card" style="grid-column:1/-1">
-        <div style="display:flex;align-items:stretch;gap:0;flex-wrap:wrap">
-          <div style="flex:1;min-width:140px;padding-right:16px">
-            <div class="kpi-label">本月現金收入</div>
-            <div class="kpi-value">$${fmt(cashTotal)}</div>
-            <div style="font-size:10px;color:var(--color-text-tertiary);margin-top:2px">流水帳匯總</div>
-          </div>
-          <div style="width:1px;background:var(--color-border);margin:0 16px 0 0;align-self:stretch;min-height:48px"></div>
-          <div style="flex:1;min-width:140px;padding-right:16px">
-            <div class="kpi-label">業績剩餘</div>
-            <div class="kpi-value" style="color:${surplusColor2};font-size:18px">${storeTarget===0?'未設目標':surplusLabel2}</div>
-            ${storeTarget>0?`<div style="font-size:10px;color:var(--color-text-tertiary);margin-top:2px">目標 $${fmt(storeTarget)}</div>`:''}
-          </div>
-          <div style="width:1px;background:var(--color-border);margin:0 16px 0 0;align-self:stretch;min-height:48px"></div>
-          <div style="flex:1;min-width:140px">
-            <div class="kpi-label">全館達成率</div>
-            <div class="kpi-value" style="color:${rateColor(rate)}">${fmtRate(rate)}</div>
-            ${storeTarget>0?`<div style="height:5px;border-radius:3px;background:var(--color-border);overflow:hidden;margin-top:6px"><div style="height:100%;width:${Math.min(100,(rate||0)*100)}%;background:${rateBarColor(rate)};border-radius:3px;transition:width .4s"></div></div>`:''}
-          </div>
-        </div>
-      </div>
+      ${combinedCard}
       ${kpiCards}
     </div>
     <p style="font-size:11px;color:var(--color-text-tertiary);margin:4px 0 14px;padding-left:4px"><span>ℹ</span> 月目標請至「年度業績」設定；耗課詳情請至「營收登記」分頁</p>
