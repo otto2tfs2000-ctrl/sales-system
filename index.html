@@ -746,7 +746,8 @@ let state = {
   // manualStats: { "flagship:5": { rev2f, rev4f, head2f, head4f }, "guotu:5": { revKg, headKg } }
   // dailyRevenue: { "flagship:6:1": {rev4f,head4f}, "guotu:6:1": {revKg,headKg}, "flagship:6:2f:1": {rev2f,head2f,sessions:[{course,students,income,date}]} }
   dailyRevenue: JSON.parse(localStorage.getItem('dailyRevenue') || '{}'),
-  entryDeptFilter: '所有'
+  entryDeptFilter: '所有',
+  salary4fDaily: {} // 從 salaryData/daily 截取的 4F 每日資料
 };
 
 let gsConfig = JSON.parse(localStorage.getItem('gsConfig') || 'null') || { url: '', name: '業績資料' };
@@ -767,6 +768,7 @@ let syncStatus = 'none'; // none | idle | busy | ok | err | live
 let fbApp = null;
 let fbDb = null;
 let fbListener = null; // active realtime listener
+let fbSalaryListener = null; // listener for salaryData/daily (4F 成人登記)
 
 function initFirebase(config) {
   try {
@@ -828,6 +830,48 @@ function startFirebaseListener() {
   });
 }
 
+// ── 監聽 salaryData/daily（4F 成人每日登記）──
+// key 格式: "2026-06_flagship_01"
+// 結構: { entries:[{newCust, oldCust, teachers:{id:{count,sales}}}], revenue }
+function startSalaryListener() {
+  if (!fbDb) return;
+  if (fbSalaryListener) { fbSalaryListener(); fbSalaryListener = null; }
+  const ref = fbDb.ref('salaryData/daily');
+  fbSalaryListener = ref.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (!data) return;
+    state.salary4fDaily = data;
+    renderAllPreserveForm();
+  }, (err) => {
+    console.error('salaryData listener error:', err);
+  });
+}
+
+// 從 salary4fDaily 取某月某日的彙總 (新客/舊客/教學人次/業績)
+// store: 'flagship'(4F) 或 'guotu'(國圖)
+function getDailyFromSalary(store, month, day) {
+  const mStr = String(YEAR) + '-' + String(month).padStart(2, '0');
+  const dStr = String(day).padStart(2, '0');
+  const key = mStr + '_' + store + '_' + dStr;
+  const rec = state.salary4fDaily[key];
+  if (!rec) return { newCust: 0, oldCust: 0, headCount: 0, sales: 0 };
+  const entries = rec.entries || [];
+  let newCust = 0, oldCust = 0, headCount = 0, sales = 0;
+  for (const e of entries) {
+    newCust += e.newCust || 0;
+    oldCust += e.oldCust || 0;
+    for (const tid of Object.keys(e.teachers || {})) {
+      const t = e.teachers[tid];
+      headCount += t.count || 0;
+      sales += t.sales || 0;
+    }
+  }
+  return { newCust, oldCust, headCount, sales };
+}
+// 舊名稱保留相容
+function get4fDailyFromSalary(month, day) { return getDailyFromSalary('flagship', month, day); }
+function getKgDailyFromSalary(month, day)  { return getDailyFromSalary('guotu',    month, day); }
+
 // Auto-init Firebase if config stored（等 DOM 完全載入後再執行）
 function autoInitFirebase() {
   if (typeof firebase === 'undefined') {
@@ -838,6 +882,7 @@ function autoInitFirebase() {
     try {
       if (initFirebase(fbConfig)) {
         startFirebaseListener();
+        startSalaryListener();
         syncStatus = 'live';
       }
     } catch(e) {
@@ -1347,12 +1392,12 @@ function renderDaily() {
   // 4F / 國圖：從 dailyRevenue 手動登記
   let total4fRev=0, head4fTotal=0, totalKgRev=0, headKgTotal=0;
   for (let d=1; d<=days; d++) {
-    const dr4f = getDailyRev('flagship', state.month, d);
-    total4fRev += dr4f.rev4f||0;
-    head4fTotal += dr4f.head4f||0;
-    const drKg  = getDailyRev('guotu', state.month, d);
-    totalKgRev += drKg.revKg||0;
-    headKgTotal += drKg.headKg||0;
+    const dr4f = get4fDailyFromSalary(state.month, d);
+    total4fRev += dr4f.sales||0;
+    head4fTotal += dr4f.headCount||0;
+    const drKg  = getKgDailyFromSalary(state.month, d);
+    totalKgRev  += drKg.sales||0;
+    headKgTotal += drKg.headCount||0;
   }
 
   // ── 上方 KPI cards ──
@@ -1440,11 +1485,11 @@ function renderDaily() {
       let revCols = '';
       if (state.store === 'flagship') {
         const d2f = data2f[d] || {};
-        const d4f = getDailyRev('flagship', state.month, d);
+        const d4f = get4fDailyFromSalary(state.month, d);
         const rev2f  = d2f.rev2f  || 0;
         const head2f = d2f.head2f || 0;
-        const rev4f  = d4f.rev4f  || 0;
-        const head4f = d4f.head4f || 0;
+        const rev4f  = d4f.sales  || 0;
+        const head4f = d4f.headCount || 0;
         revCols = `
           <td class="dr-cell">
             ${rev2f > 0
@@ -1460,17 +1505,14 @@ function renderDaily() {
               title="4F 教學人次">
           </td>`;
       } else {
-        const drKg = getDailyRev('guotu', state.month, d);
-        const revKg  = drKg.revKg  || 0;
-        const headKg = drKg.headKg || 0;
+        const drKg = getKgDailyFromSalary(state.month, d);
+        const revKg  = drKg.sales     || 0;
+        const headKg = drKg.headCount || 0;
         revCols = `
           <td class="dr-cell" colspan="2">
-            <input type="number" class="dr-input" value="${revKg||''}" placeholder="—" min="0"
-              onchange="setDailyRev('guotu',${state.month},${d},'revKg',this.value)"
-              title="耗課營收">
-            <input type="number" class="dr-input dr-head-input" value="${headKg||''}" placeholder="人次" min="0"
-              onchange="setDailyRev('guotu',${state.month},${d},'headKg',this.value)"
-              title="教學人次">
+            ${revKg > 0 || headKg > 0
+              ? `<span class="dr-val">$${fmt(revKg)}</span><span class="dr-head">${headKg}人</span>`
+              : `<span class="dr-empty">—</span>`}
           </td>`;
       }
 
@@ -1492,13 +1534,13 @@ function renderDaily() {
         const d2f = data2f[d] || {};
         rev2f  += d2f.rev2f  || 0;
         head2f += d2f.head2f || 0;
-        const d4f = getDailyRev('flagship', state.month, d);
-        rev4f  += d4f.rev4f  || 0;
-        head4f += d4f.head4f || 0;
+        const d4f = get4fDailyFromSalary(state.month, d);
+        rev4f  += d4f.sales     || 0;
+        head4f += d4f.headCount || 0;
       } else {
-        const drKg = getDailyRev('guotu', state.month, d);
-        revKg  += drKg.revKg  || 0;
-        headKg += drKg.headKg || 0;
+        const drKg = getKgDailyFromSalary(state.month, d);
+        revKg  += drKg.sales     || 0;
+        headKg += drKg.headCount || 0;
       }
     }
     return { cash, rev2f, head2f, rev4f, head4f, revKg, headKg };
@@ -1538,8 +1580,8 @@ function renderDaily() {
 
   // 表頭
   const tableHeader = state.store === 'flagship'
-    ? `<tr><th>日期</th><th>現金收入</th><th>2F 耗課營收<br><small style="font-weight:400">（匯入）</small></th><th>4F 耗課營收<br><small style="font-weight:400">金額 / 人次</small></th></tr>`
-    : `<tr><th>日期</th><th>現金收入</th><th colspan="2">耗課營收<br><small style="font-weight:400">金額 / 人次</small></th></tr>`;
+    ? `<tr><th>日期</th><th>現金收入</th><th>2F 營收<br><small style="font-weight:400">（匯入）</small></th><th>4F 營收<br><small style="font-weight:400">從資料庫</small></th></tr>`
+    : `<tr><th>日期</th><th>現金收入</th><th colspan="2">營收<br><small style="font-weight:400">從資料庫</small></th></tr>`;
 
   // 每日三欄卡片
   const days2 = daysInMonth(state.month);
@@ -2874,19 +2916,19 @@ function renderConsumption() {
     total2fHead += h2;
     total2fRev  += price2f > 0 ? h2 * price2f : (d2.rev2f || 0);
 
-    // 4F
-    const d4 = getDailyRev('flagship', month, d);
-    total4fNew  += d4.new4f  || 0;
-    total4fOld  += d4.old4f  || 0;
-    total4fHead += (d4.new4f||0) + (d4.old4f||0);
-    total4fRev  += d4.rev4f  || 0;
+    // 4F（從 salaryData/daily 截取）
+    const s4f = get4fDailyFromSalary(month, d);
+    total4fNew  += s4f.newCust;
+    total4fOld  += s4f.oldCust;
+    total4fHead += s4f.headCount;
+    total4fRev  += s4f.sales;
 
-    // 國圖
-    const dg = getDailyRev('guotu', month, d);
-    totalKgNew  += dg.newKg  || 0;
-    totalKgOld  += dg.oldKg  || 0;
-    totalKgHead += (dg.newKg||0) + (dg.oldKg||0);
-    totalKgRev  += dg.revKg  || 0;
+    // 國圖（從 salaryData/daily 截取）
+    const dg = getKgDailyFromSalary(month, d);
+    totalKgNew  += dg.newCust;
+    totalKgOld  += dg.oldCust;
+    totalKgHead += dg.headCount;
+    totalKgRev  += dg.sales;
   }
 
   // ── KPI 列 ──
@@ -2901,7 +2943,7 @@ function renderConsumption() {
       <div class="ct-kpi">
         <div class="ct-kpi-label">4F 教學人次</div>
         <div class="ct-kpi-value">${total4fHead} <span style="font-size:14px;font-weight:400">人</span></div>
-        <div class="ct-kpi-sub">新客 ${total4fNew} ／ 舊客 ${total4fOld}　營收 $${fmt(total4fRev)}</div>
+        <div class="ct-kpi-sub">新客 ${total4fNew} ／ 舊客 ${total4fOld}　教學 ${total4fHead}人</div>
       </div>
       <div class="ct-kpi">
         <div class="ct-kpi-label">全館營收</div>
@@ -2980,7 +3022,7 @@ function renderConsumption() {
     return cols;
   }
 
-  // ── 4F 卡片資料（Firebase dailyRevenue） ──
+  // ── 4F 卡片資料（從 salaryData/daily 截取）──
   function make4fCardData() {
     const cols = [
       { label: `${month}/1 — ${month}/10`, items: [], subtotal: 0 },
@@ -2988,21 +3030,19 @@ function renderConsumption() {
       { label: `${month}/21 — ${month}/${days}`, items: [], subtotal: 0 },
     ];
     for (let d=1; d<=days; d++) {
-      const d4 = getDailyRev('flagship', month, d);
-      const new4f = d4.new4f || 0;
-      const old4f = d4.old4f || 0;
-      const head4f = new4f + old4f;
-      const rev4f = d4.rev4f || 0;
-      const hasVal = head4f > 0 || rev4f > 0;
-      const display = hasVal ? `${head4f}人 $${fmt(rev4f)}` : '—';
+      const s4f = get4fDailyFromSalary(month, d);
+      const hasVal = s4f.headCount > 0 || s4f.sales > 0 || s4f.newCust > 0 || s4f.oldCust > 0;
+      const display = hasVal
+        ? `新${s4f.newCust} 舊${s4f.oldCust} ${s4f.headCount}人 $${fmt(s4f.sales)}`
+        : '—';
       const col = d <= 10 ? cols[0] : d <= 20 ? cols[1] : cols[2];
       col.items.push({ d, hasVal, display });
-      col.subtotal += rev4f;
+      col.subtotal += s4f.sales;
     }
     return cols;
   }
 
-  // ── 國圖 卡片資料（手動登記） ──
+  // ── 國圖 卡片資料（從 salaryData/daily 截取）──
   function makeKgCardData() {
     const cols = [
       { label: `${month}/1 — ${month}/10`, items: [], subtotal: 0 },
@@ -3010,16 +3050,14 @@ function renderConsumption() {
       { label: `${month}/21 — ${month}/${days}`, items: [], subtotal: 0 },
     ];
     for (let d=1; d<=days; d++) {
-      const dg = getDailyRev('guotu', month, d);
-      const newKg = dg.newKg || 0;
-      const oldKg = dg.oldKg || 0;
-      const headKg = newKg + oldKg;
-      const revKg = dg.revKg || 0;
-      const hasVal = headKg > 0 || revKg > 0;
-      const display = hasVal ? `${headKg}人 $${fmt(revKg)}` : '—';
+      const dg = getKgDailyFromSalary(month, d);
+      const hasVal = dg.headCount > 0 || dg.sales > 0 || dg.newCust > 0 || dg.oldCust > 0;
+      const display = hasVal
+        ? `新${dg.newCust} 舊${dg.oldCust} ${dg.headCount}人 $${fmt(dg.sales)}`
+        : '—';
       const col = d <= 10 ? cols[0] : d <= 20 ? cols[1] : cols[2];
       col.items.push({ d, hasVal, display });
-      col.subtotal += revKg;
+      col.subtotal += dg.sales;
     }
     return cols;
   }
