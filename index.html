@@ -318,6 +318,60 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 /* ── Combined weekly+monthly staff cards ── */
 .month-staff-section { margin-top:24px; }
 
+
+/* ── 每日營收明細表格 ── */
+.dr-table { width:100%; border-collapse:collapse; font-size:13px; min-width:500px; }
+.dr-table th { background:var(--color-bg); color:var(--color-text-secondary); font-size:11px; font-weight:600;
+  padding:8px 10px; text-align:center; border-bottom:2px solid var(--color-border); white-space:nowrap; }
+.dr-table td { padding:6px 10px; border-bottom:1px solid var(--color-border-light); vertical-align:middle; }
+.dr-date { font-size:12px; color:var(--color-text-secondary); white-space:nowrap; width:60px; }
+.dr-cash { text-align:right; font-weight:500; white-space:nowrap; }
+.dr-cell { text-align:center; vertical-align:middle; }
+.dr-val { font-weight:600; color:var(--color-text-primary); display:block; }
+.dr-head { font-size:11px; color:var(--color-text-tertiary); }
+.dr-empty { color:var(--color-text-tertiary); }
+.dr-input { width:80px; font-size:12px; padding:3px 6px; border:1px solid var(--color-border);
+  border-radius:5px; text-align:right; background:var(--color-surface); color:var(--color-text-primary); }
+.dr-input:focus { border-color:var(--color-accent); outline:none; }
+.dr-head-input { width:56px; margin-left:4px; }
+.dr-today { background:var(--color-amber-bg); }
+.dr-subtotal td { background:var(--color-bg); font-weight:600; font-size:12px;
+  color:var(--color-text-secondary); border-top:1px solid var(--color-border); padding:6px 10px; }
+.dr-subtotal small { font-weight:400; color:var(--color-text-tertiary); }
+.dr-grand-total td { background:var(--color-surface); font-weight:700; font-size:13px;
+  border-top:2px solid var(--color-border); padding:10px 10px; }
+.dr-grand-total small { font-weight:400; color:var(--color-text-secondary); }
+
+
+/* ── 耗課登記分頁 ── */
+.ct-table { width:100%; border-collapse:collapse; font-size:13px; }
+.ct-table th { background:var(--color-bg); color:var(--color-text-secondary); font-size:11px; font-weight:600;
+  padding:8px 12px; text-align:center; border-bottom:2px solid var(--color-border); white-space:nowrap; }
+.ct-table td { padding:5px 8px; border-bottom:1px solid var(--color-border-light); vertical-align:middle; text-align:center; }
+.ct-date-col { text-align:left !important; white-space:nowrap; color:var(--color-text-secondary); font-size:12px; width:90px; }
+.ct-weekday { font-size:10px; color:var(--color-text-tertiary); margin-left:4px; }
+.ct-input { width:72px; font-size:12px; padding:3px 6px; border:1px solid var(--color-border);
+  border-radius:5px; text-align:right; background:var(--color-surface); color:var(--color-text-primary); }
+.ct-input:focus { border-color:var(--color-accent); outline:none; }
+.ct-input.wide { width:90px; }
+.ct-val { font-weight:600; }
+.ct-dash { color:var(--color-text-tertiary); }
+.ct-subtotal td { background:var(--color-bg); font-weight:700; font-size:12px; color:var(--color-text-primary);
+  border-top:2px solid var(--color-border); padding:8px 12px; }
+.ct-today { background:var(--color-info-bg) !important; }
+.ct-today td:first-child { border-left:2px solid var(--color-accent); }
+.ct-section-card { background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-lg);
+  padding:16px 20px; margin-bottom:16px; box-shadow:var(--shadow-sm); }
+.ct-section-title { font-size:14px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.ct-setting-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;
+  padding:10px 14px; background:var(--color-bg); border-radius:var(--radius-md); font-size:13px; }
+.ct-kpi-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+.ct-kpi { background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-lg);
+  padding:14px 18px; flex:1; min-width:140px; box-shadow:var(--shadow-sm); }
+.ct-kpi-label { font-size:11px; color:var(--color-text-secondary); margin-bottom:4px; }
+.ct-kpi-value { font-size:22px; font-weight:700; color:var(--color-text-primary); }
+.ct-kpi-sub { font-size:11px; color:var(--color-text-tertiary); margin-top:2px; }
+
 </style>
 </head>
 <body>
@@ -359,6 +413,7 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
   <div class="nav-tab active" onclick="switchTab('entry',this)">流水帳</div>
   <div class="nav-tab" onclick="switchTab('daily',this)">每日營收現收</div>
   <div class="nav-tab" onclick="switchTab('weekly',this)">業務週報</div>
+  <div class="nav-tab" onclick="switchTab('consumption',this)">耗課登記</div>
   <div class="nav-tab" onclick="switchTab('annual',this)">年度業績</div>
 </div>
 
@@ -366,6 +421,7 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 <div id="tab-entry" class="tab-content active"></div>
 <div id="tab-daily" class="tab-content"></div>
 <div id="tab-weekly" class="tab-content"></div>
+<div id="tab-consumption" class="tab-content"></div>
 <div id="tab-annual" class="tab-content"></div>
 
 <!-- Staff Management Modal -->
@@ -402,11 +458,21 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 <div class="modal-overlay" id="add-cat-modal">
   <div class="modal" style="max-width:420px">
     <div class="modal-title">＋ 自訂購買種類</div>
-    <div class="modal-desc">新增自訂種類後，所有部門的新增表單都會出現此選項。</div>
-    <div class="modal-field">
-      <label>新種類名稱</label>
-      <input type="text" id="new-cat-input" placeholder="例：成果展課程" style="width:100%"
-        onkeydown="if(event.key==='Enter')addCustomCat()">
+    <div class="modal-desc">依部門新增自訂種類，只會出現在對應部門的選單中。</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="modal-field" style="margin-bottom:0">
+        <label>適用部門</label>
+        <select id="new-cat-dept" style="width:100%">
+          <option value="2F">2F（旗艦館兒童班）</option>
+          <option value="4F">4F（成人繪畫）</option>
+          <option value="國圖">國圖館</option>
+        </select>
+      </div>
+      <div class="modal-field" style="margin-bottom:0">
+        <label>新種類名稱</label>
+        <input type="text" id="new-cat-input" placeholder="例：成果展課程" style="width:100%"
+          onkeydown="if(event.key='Enter')addCustomCat()">
+      </div>
     </div>
     <div id="custom-cat-list" style="margin-bottom:14px"></div>
     <div class="modal-actions">
@@ -572,18 +638,33 @@ function getMonthTargets(store, month) {
 const CATS_2F = ['體驗課程','單堂(小象)','單堂(大象)','方案-小象15','方案-小象30','方案-小象48','方案-小象90','方案-大象30','方案-大象48','方案-大象90','冬夏令營','活動','商品','退款','方案補差額','幼兒園','放學趣','小象15+大象15','小象24+大象24','小象45+大象45','小象15','大象15','其他'];
 const CATS_4F = ['體驗','成人繪畫(單堂)','方案/入會','師資培訓','商品/畫布','包場包班','其他/補差額','冬夏令營','退費','退款'];
 const CATS_KG = ['體驗','成人繪畫(單堂)','方案/入會','師資培訓','商品/畫布','包場包班','其他/補差額','退費','退款'];
-let CUSTOM_CATS = JSON.parse(localStorage.getItem('customCats') || '[]');
+// 自訂種類：依部門存放 { '2F': [...], '4F': [...], '國圖': [...] }
+let CUSTOM_CATS = JSON.parse(localStorage.getItem('customCatsByDept') || '{"2F":[],"4F":[],"國圖":[]}');
+// 相容舊版（flat array → 全部移到2F）
+(function migrateOldCustomCats() {
+  const old = localStorage.getItem('customCats');
+  if (old) {
+    try {
+      const arr = JSON.parse(old);
+      if (Array.isArray(arr) && arr.length > 0) {
+        CUSTOM_CATS['2F'] = [...new Set([...CUSTOM_CATS['2F'], ...arr])];
+        saveCustomCats();
+      }
+    } catch(e) {}
+    localStorage.removeItem('customCats');
+  }
+})();
 
 function getAllCats(dept) {
   const base = { '2F': CATS_2F, '4F': CATS_4F, '國圖': CATS_KG }[dept] || CATS_2F;
-  // 合併自訂種類（去重）
+  const custom = (CUSTOM_CATS[dept] || []);
   const all = [...base];
-  CUSTOM_CATS.forEach(c => { if (!all.includes(c)) all.push(c); });
+  custom.forEach(c => { if (!all.includes(c)) all.push(c); });
   return all;
 }
 
 function saveCustomCats() {
-  localStorage.setItem('customCats', JSON.stringify(CUSTOM_CATS));
+  localStorage.setItem('customCatsByDept', JSON.stringify(CUSTOM_CATS));
 }
 
 const DEPT_CATS = { '2F': CATS_2F, '4F': CATS_4F, '國圖': CATS_KG };
@@ -663,6 +744,8 @@ let state = {
   manual2fRevenue: JSON.parse(localStorage.getItem('manual2fRevenue') || '{}'),
   manualStats: JSON.parse(localStorage.getItem('manualStats') || '{}'),
   // manualStats: { "flagship:5": { rev2f, rev4f, head2f, head4f }, "guotu:5": { revKg, headKg } }
+  // dailyRevenue: { "flagship:6:1": {rev4f,head4f}, "guotu:6:1": {revKg,headKg}, "flagship:6:2f:1": {rev2f,head2f,sessions:[{course,students,income,date}]} }
+  dailyRevenue: JSON.parse(localStorage.getItem('dailyRevenue') || '{}'),
   entryDeptFilter: '所有'
 };
 
@@ -726,6 +809,10 @@ function startFirebaseListener() {
       Object.assign(state.invPrefixes, data.settings.invPrefixes);
       changed = true;
     }
+    if (data.dailyRevenue && Object.keys(data.dailyRevenue).length > 0) {
+      Object.assign(state.dailyRevenue, data.dailyRevenue);
+      changed = true;
+    }
     if (changed) {
       retagRecordWeeks();
       localStorage.setItem('salesRecords', JSON.stringify(state.records));
@@ -776,6 +863,7 @@ function save() {
     localStorage.setItem('monthStaff', JSON.stringify(monthStaff));
     localStorage.setItem('manual2fRevenue', JSON.stringify(state.manual2fRevenue));
     localStorage.setItem('manualStats', JSON.stringify(state.manualStats));
+    localStorage.setItem('dailyRevenue', JSON.stringify(state.dailyRevenue));
   } catch(e) {}
   updateSyncDot();
 }
@@ -821,6 +909,7 @@ async function syncToFirebase(silent=false) {
       targets: monthTargets,
       manualStats: state.manualStats,
       monthStaff: monthStaff,
+      dailyRevenue: state.dailyRevenue,
       settings: { invPrefixes: state.invPrefixes },
       updatedAt: Date.now()
     });
@@ -848,6 +937,7 @@ async function loadFromSheets(silent=false) {
     if (data.manualStats) Object.assign(state.manualStats, data.manualStats);
     if (data.monthStaff) Object.assign(monthStaff, data.monthStaff);
     if (data.settings && data.settings.invPrefixes) Object.assign(state.invPrefixes, data.settings.invPrefixes);
+    if (data.dailyRevenue) Object.assign(state.dailyRevenue, data.dailyRevenue);
     retagRecordWeeks(); save(); renderAll();
     showToast('✓ 已載入 ' + ((data.records||[]).length) + ' 筆記錄');
   } catch(err) {
@@ -874,42 +964,56 @@ function closeAddCatModal() {
 function renderCustomCatList() {
   const el = document.getElementById('custom-cat-list');
   if (!el) return;
-  if (CUSTOM_CATS.length === 0) {
-    el.innerHTML = '<div style="color:var(--color-text-tertiary);font-size:13px">尚無自訂種類</div>';
-    return;
-  }
-  el.innerHTML = CUSTOM_CATS.map((c, i) =>
-    `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--color-bg);border-radius:6px;margin-bottom:6px;font-size:13px">
-      <span>${c}</span>
-      <button onclick="removeCustomCat(${i})" style="border:none;background:none;color:var(--color-red);cursor:pointer;font-size:16px;padding:0 4px">✕</button>
-    </div>`
-  ).join('');
+  const depts = ['2F','4F','國圖'];
+  let html = '';
+  let total = 0;
+  depts.forEach(dept => {
+    const cats = CUSTOM_CATS[dept] || [];
+    if (cats.length === 0) return;
+    total += cats.length;
+    html += `<div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);margin:8px 0 4px">${dept}</div>`;
+    html += cats.map((c, i) =>
+      `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:var(--color-bg);border-radius:6px;margin-bottom:4px;font-size:13px">
+        <span>${c}</span>
+        <button onclick="removeCustomCat('${dept}',${i})" style="border:none;background:none;color:var(--color-red);cursor:pointer;font-size:15px;padding:0 4px">✕</button>
+      </div>`
+    ).join('');
+  });
+  el.innerHTML = total === 0
+    ? '<div style="color:var(--color-text-tertiary);font-size:13px;padding:4px 0">尚無自訂種類</div>'
+    : html;
 }
 function addCustomCat() {
   const input = document.getElementById('new-cat-input');
+  const deptSel = document.getElementById('new-cat-dept');
   const val = input.value.trim();
+  const dept = deptSel ? deptSel.value : '2F';
   if (!val) { showToast('請輸入種類名稱', true); return; }
-  if (CUSTOM_CATS.includes(val) || CATS_2F.includes(val) || CATS_4F.includes(val) || CATS_KG.includes(val)) {
-    showToast('此種類已存在', true); return;
+  const baseCats = { '2F': CATS_2F, '4F': CATS_4F, '國圖': CATS_KG }[dept] || [];
+  if (baseCats.includes(val) || (CUSTOM_CATS[dept]||[]).includes(val)) {
+    showToast('此部門已有「' + val + '」', true); return;
   }
-  CUSTOM_CATS.push(val);
+  if (!CUSTOM_CATS[dept]) CUSTOM_CATS[dept] = [];
+  CUSTOM_CATS[dept].push(val);
   saveCustomCats();
   input.value = '';
   renderCustomCatList();
-  // 重新渲染選單
-  const dept = document.getElementById('f-dept')?.value || '2F';
-  const cats = getAllCats(dept);
-  const sel = document.getElementById('f-cat');
-  if (sel) { sel.innerHTML = cats.map(c=>`<option value="${c}">${c}</option>`).join(''); sel.value = val; }
-  showToast('✓ 已新增「' + val + '」');
+  // 如果目前表單部門相符，重新渲染選單
+  const formDept = document.getElementById('f-dept')?.value;
+  if (formDept === dept) {
+    const sel = document.getElementById('f-cat');
+    if (sel) { sel.innerHTML = getAllCats(dept).map(c=>`<option value="${c}">${c}</option>`).join(''); sel.value = val; }
+  }
+  showToast('✓ 已為 ' + dept + ' 新增「' + val + '」');
 }
-function removeCustomCat(idx) {
-  const name = CUSTOM_CATS[idx];
-  if (!confirm(`確定刪除自訂種類「${name}」？\n（不影響已有的記錄）`)) return;
-  CUSTOM_CATS.splice(idx, 1);
+function removeCustomCat(dept, idx) {
+  const name = (CUSTOM_CATS[dept]||[])[idx];
+  if (!name) return;
+  if (!confirm(`確定從 ${dept} 刪除自訂種類「${name}」？\n（不影響已有的記錄）`)) return;
+  CUSTOM_CATS[dept].splice(idx, 1);
   saveCustomCats();
   renderCustomCatList();
-  showToast('已刪除「' + name + '」');
+  showToast('已刪除 ' + dept + ' 的「' + name + '」');
 }
 
 function openSettings() {
@@ -1100,168 +1204,430 @@ function rateBadge(r) {
 // ══════════════════════════════════════
 //  RENDER: DAILY
 // ══════════════════════════════════════
+
+// ══════════════════════════════════════
+//  耗課營收 Helpers
+// ══════════════════════════════════════
+function getDailyRevKey(store, month, day) {
+  return `${store}:${month}:${day}`;
+}
+function getDailyRev(store, month, day) {
+  return state.dailyRevenue[getDailyRevKey(store, month, day)] || {};
+}
+function setDailyRev(store, month, day, key, val) {
+  const k = getDailyRevKey(store, month, day);
+  if (!state.dailyRevenue[k]) state.dailyRevenue[k] = {};
+  state.dailyRevenue[k][key] = parseFloat(val) || 0;
+  save();
+  syncToFirebase(true);
+  renderDaily();
+}
+// 2F Excel 匯入資料 key
+function get2fImportKey(month) { return `2f_import:${month}`; }
+function get2fDailyData(month) {
+  // 從匯入資料彙整成 { day: {rev2f, head2f, sessions:[]} }
+  const raw = state.dailyRevenue[get2fImportKey(month)] || {};
+  return raw; // already { "1": {rev2f, head2f, sessions}, ... }
+}
+
+// 匯入 2F Excel
+async function import2fExcel(file, month) {
+  const { read, utils } = await loadXLSX();
+  const buf = await file.arrayBuffer();
+  const wb = read(buf);
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = utils.sheet_to_json(ws, { header: 1 });
+
+  // header row: #, 課程, 日期, 時間, 出席狀態, 缺席, 老師, 老師鐘點費, 課程收入, 盈利, 教室
+  const header = rows[0];
+  const idxDate = header.indexOf('日期');
+  const idxAtt  = header.indexOf('出席狀態');
+  const idxInc  = header.indexOf('課程收入');
+  const idxCourse = header.indexOf('課程');
+  if (idxDate < 0 || idxAtt < 0 || idxInc < 0) {
+    showToast('格式錯誤：找不到日期/出席狀態/課程收入欄位', true); return;
+  }
+
+  const byDay = {}; // { "1": {rev2f, head2f, sessions:[]} }
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row[idxDate]) continue;
+    // 解析日期
+    let dateStr = String(row[idxDate]);
+    let day = null;
+    const m = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+      const rowMonth = parseInt(m[2]);
+      if (rowMonth !== month) continue; // 跳過不同月份
+      day = parseInt(m[3]);
+    } else continue;
+
+    // 解析出席人數：格式 "4 / 6"
+    const attStr = String(row[idxAtt] || '');
+    const attM = attStr.match(/(\d+)\s*\/\s*(\d+)/);
+    const attended = attM ? parseInt(attM[1]) : 0;
+    if (attended === 0) continue; // 0人出席跳過
+
+    const income = parseFloat(row[idxInc]) || 0;
+    const course = String(row[idxCourse] || '');
+
+    if (!byDay[day]) byDay[day] = { rev2f: 0, head2f: 0, sessions: [] };
+    byDay[day].rev2f += income;
+    byDay[day].head2f += attended;
+    byDay[day].sessions.push({ course, students: attended, income, date: dateStr.split(' ')[0] });
+  }
+
+  // 存入 dailyRevenue
+  const key = get2fImportKey(month);
+  state.dailyRevenue[key] = byDay;
+  save();
+  syncToFirebase(true);
+
+  const totalDays = Object.keys(byDay).length;
+  const totalInc = Object.values(byDay).reduce((s,d)=>s+d.rev2f,0);
+  const totalHead = Object.values(byDay).reduce((s,d)=>s+d.head2f,0);
+  showToast(`✓ 2F ${month}月 匯入完成：${totalDays}天，${totalHead}人次，$${fmt(totalInc)}`);
+  renderDaily();
+}
+
+async function loadXLSX() {
+  if (window.XLSX) return window.XLSX;
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = () => { window.XLSX = XLSX; res(XLSX); };
+    s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+function trigger2fImport() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.xlsx,.xls,.csv';
+  inp.onchange = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    showToast('解析中...');
+    try {
+      await import2fExcel(f, state.month);
+    } catch(err) {
+      showToast('匯入失敗：' + err.message, true);
+      console.error(err);
+    }
+  };
+  inp.click();
+}
+
+function clear2fImport(month) {
+  if (!confirm(`確定清除 ${month}月 的 2F 匯入耗課資料？`)) return;
+  const key = get2fImportKey(month);
+  delete state.dailyRevenue[key];
+  save();
+  syncToFirebase(true);
+  renderDaily();
+  showToast('已清除');
+}
+
 function renderDaily() {
   const days = daysInMonth(state.month);
-  const total = filterRecs({ month: state.month }).reduce((s,r) => s+r.amount, 0);
+  const cashTotal = filterRecs({ month: state.month }).reduce((s,r) => s+r.amount, 0);
   const tgt = getMonthTargets(state.store, state.month);
-  const today = new Date(); const todayDay = today.getMonth()+1 === state.month ? today.getDate() : -1;
-
-  let col1='', col2='', col3='';
-  for (let d=1; d<=10; d++) {
-    const amt = dayTotal(d);
-    col1 += `<div class="daily-row${d===todayDay?' today':''}"><span class="daily-date">${state.month}/${d}</span><span class="daily-amt${amt===0?' zero':''}">${amt===0?'—':'$'+fmt(amt)}</span></div>`;
-  }
-  for (let d=11; d<=20; d++) {
-    const amt = dayTotal(d);
-    col2 += `<div class="daily-row${d===todayDay?' today':''}"><span class="daily-date">${state.month}/${d}</span><span class="daily-amt${amt===0?' zero':''}">${amt===0?'—':'$'+fmt(amt)}</span></div>`;
-  }
-  for (let d=21; d<=days; d++) {
-    const amt = dayTotal(d);
-    col3 += `<div class="daily-row${d===todayDay?' today':''}"><span class="daily-date">${state.month}/${d}</span><span class="daily-amt${amt===0?' zero':''}">${amt===0?'—':'$'+fmt(amt)}</span></div>`;
-  }
-  const sub1 = Array.from({length:10},(_,i)=>dayTotal(i+1)).reduce((a,b)=>a+b,0);
-  const sub2 = Array.from({length:10},(_,i)=>dayTotal(i+11)).reduce((a,b)=>a+b,0);
-  const sub3 = Array.from({length:days-20},(_,i)=>dayTotal(i+21)).reduce((a,b)=>a+b,0);
-
+  const today = new Date();
+  const todayDay = today.getMonth()+1 === state.month ? today.getDate() : -1;
   const msKey = `${state.store}:${state.month}`;
-  const ms = state.manualStats[msKey] || {};
 
-  let storeTarget = 0, kpiCards = '', deptBars = '', manualSection = '';
+  // ── 彙整每日耗課 ──
+  // 2F：從 Excel 匯入資料取得
+  const data2f = get2fDailyData(state.month); // { "1": {rev2f,head2f}, ... }
+  // 2F 月合計
+  const total2fImport = Object.values(data2f).reduce((s,d)=>s+(d.rev2f||0),0);
+  const head2fImport  = Object.values(data2f).reduce((s,d)=>s+(d.head2f||0),0);
+
+  // 4F / 國圖：從 dailyRevenue 手動登記
+  let total4fRev=0, head4fTotal=0, totalKgRev=0, headKgTotal=0;
+  for (let d=1; d<=days; d++) {
+    const dr4f = getDailyRev('flagship', state.month, d);
+    total4fRev += dr4f.rev4f||0;
+    head4fTotal += dr4f.head4f||0;
+    const drKg  = getDailyRev('guotu', state.month, d);
+    totalKgRev += drKg.revKg||0;
+    headKgTotal += drKg.headKg||0;
+  }
+
+  // ── 上方 KPI cards ──
+  let kpiCards='', storeTarget=0;
+
+  // 內嵌進度條 helper（用在 KPI 卡片內）
+  function miniBar(rate) {
+    if (rate === null) return '';
+    const pct = Math.min(100, (rate||0)*100);
+    return `<div style="margin-top:6px">
+      <div style="height:5px;border-radius:3px;background:var(--color-border);overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${rateBarColor(rate)};border-radius:3px;transition:width .4s"></div>
+      </div>
+    </div>`;
+  }
 
   if (state.store === 'flagship') {
     const cashIncome2f = filterRecs({ month: state.month, dept: '2F' }).reduce((s,r)=>s+r.amount,0);
     const cashIncome4f = filterRecs({ month: state.month, dept: '4F' }).reduce((s,r)=>s+r.amount,0);
-    const manualRev2f = ms.rev2f || 0;
-    const manualRev4f = ms.rev4f || 0;
-    const total2f = cashIncome2f + manualRev2f;
-    const total4f = cashIncome4f + manualRev4f;
     const target2f = tgt._2f || 0;
     const target4f = tgt._4f || 0;
     storeTarget = target2f + target4f;
-
-    const rate2f = target2f > 0 ? total2f / target2f : null;
-    const rate4f = target4f > 0 ? total4f / target4f : null;
-    const bar2f = Math.min(100,(rate2f||0)*100);
-    const bar4f = Math.min(100,(rate4f||0)*100);
+    const rate2f = target2f > 0 ? cashIncome2f / target2f : null;
+    const rate4f = target4f > 0 ? cashIncome4f / target4f : null;
 
     kpiCards = `
       <div class="kpi-card">
         <div class="kpi-label">2F 現金收入</div>
         <div class="kpi-value">$${fmt(cashIncome2f)}</div>
-        <div class="kpi-sublabel" style="color:var(--color-text-tertiary);font-size:10px">方案銷售／預收款</div>
-        ${manualRev2f>0?`<div class="kpi-sublabel" style="color:var(--color-text-secondary)">營業收入 $${fmt(manualRev2f)}</div>`:''}
-        <div class="kpi-sublabel">目標 $${fmt(target2f)}</div>
+        ${total2fImport>0?`<div style="font-size:12px;color:var(--color-text-secondary);margin-top:2px">耗課營收 <strong>$${fmt(total2fImport)}</strong>　${head2fImport}人次</div>`:''}
+        ${rate2f !== null
+          ? `<div style="display:flex;align-items:baseline;gap:6px;margin-top:4px">
+              <span style="font-size:16px;font-weight:700;color:${rateColor(rate2f)}">${fmtRate(rate2f)}</span>
+              <span style="font-size:11px;color:var(--color-text-tertiary)">/ 目標 $${fmt(target2f)}</span>
+             </div>
+             ${miniBar(rate2f)}`
+          : `<div class="kpi-sublabel">目標未設定</div>`}
       </div>
       <div class="kpi-card">
         <div class="kpi-label">4F 現金收入</div>
         <div class="kpi-value">$${fmt(cashIncome4f)}</div>
-        <div class="kpi-sublabel" style="color:var(--color-text-tertiary);font-size:10px">方案銷售／預收款</div>
-        ${manualRev4f>0?`<div class="kpi-sublabel" style="color:var(--color-text-secondary)">營業收入 $${fmt(manualRev4f)}</div>`:''}
-        <div class="kpi-sublabel">目標 $${fmt(target4f)}</div>
-      </div>`;
-
-    deptBars = `
-      <div class="target-row">
-        <label><span>🏢</span> 2F 進度</label>
-        <span style="min-width:110px;font-size:13px;font-weight:600">$${fmt(total2f)} <span style="font-size:11px;color:var(--color-text-tertiary)">/ $${fmt(target2f)}</span></span>
-        <div class="progress-wrap"><div class="progress-bar" style="width:${bar2f}%;background:${rateBarColor(rate2f)}"></div></div>
-        <span class="progress-label" style="color:${rateColor(rate2f)}">${fmtRate(rate2f)}</span>
-      </div>
-      <div class="target-row">
-        <label><span>🏢</span> 4F 進度</label>
-        <span style="min-width:110px;font-size:13px;font-weight:600">$${fmt(total4f)} <span style="font-size:11px;color:var(--color-text-tertiary)">/ $${fmt(target4f)}</span></span>
-        <div class="progress-wrap"><div class="progress-bar" style="width:${bar4f}%;background:${rateBarColor(rate4f)}"></div></div>
-        <span class="progress-label" style="color:${rateColor(rate4f)}">${fmtRate(rate4f)}</span>
-      </div>`;
-
-    manualSection = `
-      <div class="manual-stats-section">
-        <div class="manual-stats-title"><span>💰</span> 營業收入登記（學生實際消耗課時，與現金收入分開計算）</div>
-        <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:10px;line-height:1.6">
-          <span>ℹ</span> 現金收入＝方案銷售預收款（流水帳）；營業收入＝學生確認上課後的實際消耗金額（手動登記）
-        </div>
-        <div class="manual-stats-grid">
-          <div class="field"><label>2F 營業收入</label><input type="number" value="${ms.rev2f||''}" placeholder="0" min="0" onchange="saveManualStat('rev2f',this.value)"></div>
-          <div class="field"><label>4F 營業收入</label><input type="number" value="${ms.rev4f||''}" placeholder="0" min="0" onchange="saveManualStat('rev4f',this.value)"></div>
-          <div class="field"><label>2F 教學總人次</label><input type="number" value="${ms.head2f||''}" placeholder="0" min="0" onchange="saveManualStat('head2f',this.value)"></div>
-          <div class="field"><label>4F 教學總人次</label><input type="number" value="${ms.head4f||''}" placeholder="0" min="0" onchange="saveManualStat('head4f',this.value)"></div>
-        </div>
-        ${ms.head2f||ms.head4f ? `<div style="margin-top:8px;font-size:12px;color:var(--color-text-secondary)">本月總人次：<strong>${(ms.head2f||0)+(ms.head4f||0)}</strong> 人次（2F ${ms.head2f||0} ＋ 4F ${ms.head4f||0}）</div>` : ''}
+        ${total4fRev>0?`<div style="font-size:12px;color:var(--color-text-secondary);margin-top:2px">耗課營收 <strong>$${fmt(total4fRev)}</strong>　${head4fTotal}人次</div>`:''}
+        ${rate4f !== null
+          ? `<div style="display:flex;align-items:baseline;gap:6px;margin-top:4px">
+              <span style="font-size:16px;font-weight:700;color:${rateColor(rate4f)}">${fmtRate(rate4f)}</span>
+              <span style="font-size:11px;color:var(--color-text-tertiary)">/ 目標 $${fmt(target4f)}</span>
+             </div>
+             ${miniBar(rate4f)}`
+          : `<div class="kpi-sublabel">目標未設定</div>`}
       </div>`;
   } else {
     const guotuTarget = tgt._store || 0;
     storeTarget = guotuTarget;
-    const rateG = guotuTarget > 0 ? total / guotuTarget : null;
-    const manualRevKg = ms.revKg || 0;
-    deptBars = `
-      <div class="target-row">
-        <label><span>🎯</span> 進度</label>
-        <span style="min-width:110px;font-size:13px;font-weight:600">$${fmt(total+manualRevKg)} <span style="font-size:11px;color:var(--color-text-tertiary)">/ $${fmt(guotuTarget)}</span></span>
-        <div class="progress-wrap"><div class="progress-bar" style="width:${Math.min(100,(rateG||0)*100)}%;background:${rateBarColor(rateG)}"></div></div>
-        <span class="progress-label" style="color:${rateColor(rateG)}">${fmtRate(rateG)}</span>
-      </div>`;
-    manualSection = `
-      <div class="manual-stats-section">
-        <div class="manual-stats-title"><span>💰</span> 營業收入登記（國圖館）</div>
-        <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:10px;line-height:1.6">
-          <span>ℹ</span> 現金收入＝方案銷售預收款（流水帳）；營業收入＝學生確認上課後的實際消耗金額（手動登記）
-        </div>
-        <div class="manual-stats-grid">
-          <div class="field"><label>營業收入</label><input type="number" value="${ms.revKg||''}" placeholder="0" min="0" onchange="saveManualStat('revKg',this.value)"></div>
-          <div class="field"><label>教學總人次</label><input type="number" value="${ms.headKg||''}" placeholder="0" min="0" onchange="saveManualStat('headKg',this.value)"></div>
-        </div>
-        ${ms.headKg ? `<div style="margin-top:8px;font-size:12px;color:var(--color-text-secondary)">本月總人次：<strong>${ms.headKg}</strong> 人次</div>` : ''}
+    const rateG = guotuTarget > 0 ? cashTotal / guotuTarget : null;
+    kpiCards = `
+      <div class="kpi-card">
+        <div class="kpi-label">現金收入</div>
+        <div class="kpi-value">$${fmt(cashTotal)}</div>
+        ${totalKgRev>0?`<div style="font-size:12px;color:var(--color-text-secondary);margin-top:2px">耗課營收 <strong>$${fmt(totalKgRev)}</strong>　${headKgTotal}人次</div>`:''}
+        ${rateG !== null
+          ? `<div style="display:flex;align-items:baseline;gap:6px;margin-top:4px">
+              <span style="font-size:16px;font-weight:700;color:${rateColor(rateG)}">${fmtRate(rateG)}</span>
+              <span style="font-size:11px;color:var(--color-text-tertiary)">/ 目標 $${fmt(guotuTarget)}</span>
+             </div>
+             ${miniBar(rateG)}`
+          : `<div class="kpi-sublabel">目標未設定</div>`}
       </div>`;
   }
 
-  const rate = storeTarget > 0 ? total / storeTarget : null;
-  const diff = total - storeTarget;
+  const rate = storeTarget > 0 ? cashTotal / storeTarget : null;
+  const diff = cashTotal - storeTarget;
   const surplusCard = storeTarget === 0
     ? `<div class="kpi-card"><div class="kpi-label">業績剩餘</div><div class="kpi-value" style="color:var(--color-text-tertiary)">未設目標</div></div>`
     : diff >= 0
       ? `<div class="kpi-card"><div class="kpi-label">超出業績 🎉</div><div class="kpi-value" style="color:var(--color-green)">+$${fmt(diff)}</div></div>`
       : `<div class="kpi-card"><div class="kpi-label">業績剩餘</div><div class="kpi-value" style="color:var(--color-red)">$${fmt(-diff)}</div></div>`;
 
+  // ── 每日明細表格（現金收入 + 耗課）──
+  function makeDailyRows(from, to) {
+    let rows = '';
+    for (let d=from; d<=to && d<=days; d++) {
+      const cashAmt = dayTotal(d);
+      const isToday = d === todayDay;
+
+      let revCols = '';
+      if (state.store === 'flagship') {
+        const d2f = data2f[d] || {};
+        const d4f = getDailyRev('flagship', state.month, d);
+        const rev2f  = d2f.rev2f  || 0;
+        const head2f = d2f.head2f || 0;
+        const rev4f  = d4f.rev4f  || 0;
+        const head4f = d4f.head4f || 0;
+        revCols = `
+          <td class="dr-cell">
+            ${rev2f > 0
+              ? `<span class="dr-val">$${fmt(rev2f)}</span><span class="dr-head">${head2f}人</span>`
+              : `<span class="dr-empty">—</span>`}
+          </td>
+          <td class="dr-cell">
+            <input type="number" class="dr-input" value="${rev4f||''}" placeholder="—" min="0"
+              onchange="setDailyRev('flagship',${state.month},${d},'rev4f',this.value)"
+              title="4F 耗課營收">
+            <input type="number" class="dr-input dr-head-input" value="${head4f||''}" placeholder="人次" min="0"
+              onchange="setDailyRev('flagship',${state.month},${d},'head4f',this.value)"
+              title="4F 教學人次">
+          </td>`;
+      } else {
+        const drKg = getDailyRev('guotu', state.month, d);
+        const revKg  = drKg.revKg  || 0;
+        const headKg = drKg.headKg || 0;
+        revCols = `
+          <td class="dr-cell" colspan="2">
+            <input type="number" class="dr-input" value="${revKg||''}" placeholder="—" min="0"
+              onchange="setDailyRev('guotu',${state.month},${d},'revKg',this.value)"
+              title="耗課營收">
+            <input type="number" class="dr-input dr-head-input" value="${headKg||''}" placeholder="人次" min="0"
+              onchange="setDailyRev('guotu',${state.month},${d},'headKg',this.value)"
+              title="教學人次">
+          </td>`;
+      }
+
+      rows += `<tr class="${isToday?'dr-today':''}">
+        <td class="dr-date">${state.month}/${d}${isToday?' 🔴':''}</td>
+        <td class="dr-cash">${cashAmt>0?'$'+fmt(cashAmt):'<span class="dr-empty">—</span>'}</td>
+        ${revCols}
+      </tr>`;
+    }
+    return rows;
+  }
+
+  // 小計計算
+  function subTotals(from, to) {
+    let cash=0, rev2f=0, head2f=0, rev4f=0, head4f=0, revKg=0, headKg=0;
+    for (let d=from; d<=to && d<=days; d++) {
+      cash += dayTotal(d);
+      if (state.store === 'flagship') {
+        const d2f = data2f[d] || {};
+        rev2f  += d2f.rev2f  || 0;
+        head2f += d2f.head2f || 0;
+        const d4f = getDailyRev('flagship', state.month, d);
+        rev4f  += d4f.rev4f  || 0;
+        head4f += d4f.head4f || 0;
+      } else {
+        const drKg = getDailyRev('guotu', state.month, d);
+        revKg  += drKg.revKg  || 0;
+        headKg += drKg.headKg || 0;
+      }
+    }
+    return { cash, rev2f, head2f, rev4f, head4f, revKg, headKg };
+  }
+
+  function subTotalRow(from, to) {
+    const st = subTotals(from, to);
+    if (state.store === 'flagship') {
+      return `<tr class="dr-subtotal">
+        <td>小計</td>
+        <td>$${fmt(st.cash)}</td>
+        <td>${st.rev2f>0?`$${fmt(st.rev2f)}<br><small>${st.head2f}人</small>`:'—'}</td>
+        <td>${st.rev4f>0?`$${fmt(st.rev4f)}<br><small>${st.head4f}人</small>`:'—'}</td>
+      </tr>`;
+    } else {
+      return `<tr class="dr-subtotal">
+        <td>小計</td>
+        <td>$${fmt(st.cash)}</td>
+        <td colspan="2">${st.revKg>0?`$${fmt(st.revKg)}<br><small>${st.headKg}人</small>`:'—'}</td>
+      </tr>`;
+    }
+  }
+
+  // 2F 匯入按鈕（僅旗艦館顯示）
+  const has2fData = Object.keys(data2f).length > 0;
+  const import2fBtn = state.store === 'flagship' ? `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn-secondary" onclick="trigger2fImport()" style="font-size:12px;padding:6px 14px">
+        <span>📂</span> 匯入 2F 耗課 Excel（${state.month}月）
+      </button>
+      ${has2fData ? `
+        <span style="font-size:12px;color:var(--color-green)">✓ 已匯入：共 ${head2fImport} 人次，$${fmt(total2fImport)}</span>
+        <button class="btn-secondary" onclick="show2fDetail()" style="font-size:11px;padding:4px 10px">明細</button>
+        <button onclick="clear2fImport(${state.month})" style="font-size:11px;padding:4px 10px;border:1px solid var(--color-red);color:var(--color-red);background:none;border-radius:6px;cursor:pointer">清除</button>
+      ` : `<span style="font-size:12px;color:var(--color-text-tertiary)">尚未匯入本月資料</span>`}
+    </div>` : '';
+
+  // 表頭
+  const tableHeader = state.store === 'flagship'
+    ? `<tr><th>日期</th><th>現金收入</th><th>2F 耗課營收<br><small style="font-weight:400">（匯入）</small></th><th>4F 耗課營收<br><small style="font-weight:400">金額 / 人次</small></th></tr>`
+    : `<tr><th>日期</th><th>現金收入</th><th colspan="2">耗課營收<br><small style="font-weight:400">金額 / 人次</small></th></tr>`;
+
+  // 每日三欄卡片
+  const days2 = daysInMonth(state.month);
+  const today2 = new Date(); const todayDay2 = today2.getMonth()+1 === state.month ? today2.getDate() : -1;
+  let col1='', col2='', col3='';
+  for (let d=1; d<=10; d++) {
+    const amt = dayTotal(d);
+    col1 += `<div class="daily-row${d===todayDay2?' today':''}"><span class="daily-date">${state.month}/${d}</span><span class="daily-amt${amt===0?' zero':''}">${amt===0?'—':'$'+fmt(amt)}</span></div>`;
+  }
+  for (let d=11; d<=20; d++) {
+    const amt = dayTotal(d);
+    col2 += `<div class="daily-row${d===todayDay2?' today':''}"><span class="daily-date">${state.month}/${d}</span><span class="daily-amt${amt===0?' zero':''}">${amt===0?'—':'$'+fmt(amt)}</span></div>`;
+  }
+  for (let d=21; d<=days2; d++) {
+    const amt = dayTotal(d);
+    col3 += `<div class="daily-row${d===todayDay2?' today':''}"><span class="daily-date">${state.month}/${d}</span><span class="daily-amt${amt===0?' zero':''}">${amt===0?'—':'$'+fmt(amt)}</span></div>`;
+  }
+  const s1 = Array.from({length:10},(_,i)=>dayTotal(i+1)).reduce((a,b)=>a+b,0);
+  const s2 = Array.from({length:10},(_,i)=>dayTotal(i+11)).reduce((a,b)=>a+b,0);
+  const s3 = Array.from({length:days2-20},(_,i)=>dayTotal(i+21)).reduce((a,b)=>a+b,0);
+
   document.getElementById('tab-daily').innerHTML = `
     <div class="kpi-grid">
-      <div class="kpi-card"><div class="kpi-label">本月累計</div><div class="kpi-value">$${fmt(total)}</div></div>
+      <div class="kpi-card">
+        <div class="kpi-label">本月現金收入</div>
+        <div class="kpi-value">$${fmt(cashTotal)}</div>
+        <div class="kpi-sublabel" style="color:var(--color-text-tertiary);font-size:10px">流水帳匯總</div>
+      </div>
       ${surplusCard}
       ${kpiCards}
-      <div class="kpi-card"><div class="kpi-label">全館達成率</div><div class="kpi-value" style="color:${rateColor(rate)}">${fmtRate(rate)}</div>
-        ${storeTarget>0?`<div class="kpi-sublabel">目標 $${fmt(storeTarget)}（自動）</div>`:''}
+      <div class="kpi-card">
+        <div class="kpi-label">全館達成率</div>
+        <div class="kpi-value" style="color:${rateColor(rate)}">${fmtRate(rate)}</div>
+        ${storeTarget>0?`
+          <div style="margin-top:6px">
+            <div style="height:6px;border-radius:3px;background:var(--color-border);overflow:hidden">
+              <div style="height:100%;width:${Math.min(100,(rate||0)*100)}%;background:${rateBarColor(rate)};border-radius:3px;transition:width .4s"></div>
+            </div>
+            <div class="kpi-sublabel" style="margin-top:4px">目標 $${fmt(storeTarget)}</div>
+          </div>`:''}
       </div>
     </div>
-    <div class="target-row" style="opacity:.7;background:var(--color-bg);border-style:dashed">
-      <label style="color:var(--color-text-tertiary)"><span>🧮</span> 全館進度</label>
-      <span style="min-width:110px;font-size:13px;font-weight:600;color:var(--color-text-secondary)">$${fmt(total)} / $${fmt(storeTarget)}</span>
-      <div class="progress-wrap"><div class="progress-bar" style="width:${Math.min(100,(rate||0)*100)}%;background:${rateBarColor(rate)}"></div></div>
-      <span class="progress-label" style="color:${rateColor(rate)}">${fmtRate(rate)}</span>
-    </div>
-    ${deptBars}
-    ${manualSection}
-    <p style="font-size:11px;color:var(--color-text-tertiary);margin:4px 0 14px;padding-left:4px"><span>ℹ</span> 月目標請至「年度業績」分頁設定</p>
+    <p style="font-size:11px;color:var(--color-text-tertiary);margin:4px 0 14px;padding-left:4px"><span>ℹ</span> 月目標請至「年度業績」設定；耗課詳情請至「耗課登記」分頁</p>
     <div class="section-title"><span>📅</span> 每日現收明細</div>
     <div class="daily-grid">
       <div class="daily-col">
         <div class="daily-col-hdr">${state.month}/1 — ${state.month}/10</div>
         ${col1}
-        <div class="subtotal-row"><span>小計</span><span>$${fmt(sub1)}</span></div>
+        <div class="subtotal-row"><span>小計</span><span>$${fmt(s1)}</span></div>
       </div>
       <div class="daily-col">
         <div class="daily-col-hdr">${state.month}/11 — ${state.month}/20</div>
         ${col2}
-        <div class="subtotal-row"><span>小計</span><span>$${fmt(sub2)}</span></div>
+        <div class="subtotal-row"><span>小計</span><span>$${fmt(s2)}</span></div>
       </div>
       <div class="daily-col">
-        <div class="daily-col-hdr">${state.month}/21 — ${state.month}/${days}</div>
+        <div class="daily-col-hdr">${state.month}/21 — ${state.month}/${days2}</div>
         ${col3}
-        <div class="subtotal-row"><span>小計</span><span>$${fmt(sub3)}</span></div>
+        <div class="subtotal-row"><span>小計</span><span>$${fmt(s3)}</span></div>
       </div>
     </div>
     <div class="total-banner">
-      <span class="total-banner-label">${state.month}月 總計</span>
-      <span class="total-banner-value">$${fmt(total)}</span>
-    </div>`;
+      <span class="total-banner-label">${state.month}月 現金收入總計</span>
+      <span class="total-banner-value">$${fmt(cashTotal)}</span>
+    </div>
+  `;
+}
+
+function show2fDetail() {
+  const el = document.getElementById('daily-revenue-2f-detail');
+  if (!el) return;
+  if (el.style.display !== 'none') { el.style.display='none'; return; }
+  const data2f = get2fDailyData(state.month);
+  const days = Object.keys(data2f).sort((a,b)=>+a-+b);
+  let html = `<div style="background:var(--color-bg);border:1px solid var(--color-border);border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px">
+    <div style="font-weight:600;margin-bottom:8px">2F 匯入明細（${state.month}月）</div>`;
+  for (const d of days) {
+    const day = data2f[d];
+    html += `<div style="margin-bottom:6px"><strong>${state.month}/${d}</strong>：${day.head2f}人次，$${fmt(day.rev2f)}
+      <div style="margin-left:12px;color:var(--color-text-secondary)">`;
+    for (const s of (day.sessions||[])) {
+      html += `${s.course}（${s.students}人）$${fmt(s.income)}　`;
+    }
+    html += `</div></div>`;
+  }
+  html += `</div>`;
+  el.innerHTML = html;
+  el.style.display = 'block';
 }
 
 // ══════════════════════════════════════
@@ -1287,21 +1653,33 @@ function renderWeekly() {
     const CAMP_CATS = ['冬夏令營','活動','包場包班','師資培訓'];
     const tiRecs = recs.filter(r => r.category && r.category.includes('體驗'));
     const ti = tiRecs.length;
-    // 新單：種類為方案/入會且來源為新單
-    const nsRecs = recs.filter(r => PLAN_CATS.includes(r.category) && r.source === '新單');
+
+    // ── 新單 / 續單 邏輯（依部門不同） ──
+    // 2F：只要來源=新單 就算新單（不限種類）；只要來源=續單 就算續單（不限種類）
+    // 4F / 國圖：種類必須為方案/入會 才算新單/續單
+    const is2F = (r) => r.dept === '2F';
+    const nsRecs = recs.filter(r =>
+      r.source === '新單' && (is2F(r) || PLAN_CATS.includes(r.category))
+    );
     const ns = nsRecs.length;
     const nsAmt = nsRecs.reduce((s,r)=>s+r.amount,0);
-    // 續單：種類為方案/入會且來源為續單
-    const xuRecs = recs.filter(r => PLAN_CATS.includes(r.category) && r.source === '續單');
+
+    const xuRecs = recs.filter(r =>
+      r.source === '續單' && (is2F(r) || PLAN_CATS.includes(r.category))
+    );
     const xu = xuRecs.length;
     const xuAmt = xuRecs.reduce((s,r)=>s+r.amount,0);
+
     // 營隊/活動：種類為冬夏令營、活動、包場包班、師資培訓
     const yq = recs.filter(r => CAMP_CATS.includes(r.category)).reduce((s,r)=>s+r.amount,0);
-    // 商品/其他：所有未計入新單、續單、營隊的金額（含體驗、單堂、方案來源其他等）
+    // 商品/其他：未計入新單、續單、營隊的金額
     const sp = recs.filter(r => {
-      const c = r.category || '';
-      if (PLAN_CATS.includes(c) && (r.source === '新單' || r.source === '續單')) return false;
-      if (CAMP_CATS.includes(c)) return false;
+      // 已計入新單
+      if (nsRecs.includes(r)) return false;
+      // 已計入續單
+      if (xuRecs.includes(r)) return false;
+      // 已計入營隊
+      if (CAMP_CATS.includes(r.category)) return false;
       return true;
     }).reduce((s,r)=>s+r.amount,0);
     const weekTotal = nsAmt + xuAmt + yq + sp;
@@ -2206,6 +2584,7 @@ function switchTab(name, el) {
   else if (name==='weekly') renderWeekly();
   else if (name==='annual') renderAnnual();
   else if (name==='entry') renderEntry();
+  else if (name==='consumption') renderConsumption();
 }
 function changeMonth(m) {
   state.month = parseInt(m);
@@ -2287,6 +2666,7 @@ function renderAll() {
   else if (id==='weekly') renderWeekly();
   else if (id==='annual') renderAnnual();
   else if (id==='entry') renderEntry();
+  else if (id==='consumption') renderConsumption();
 }
 
 // ══════════════════════════════════════
@@ -2384,9 +2764,10 @@ function saveStaffChanges() {
   });
 
   save();
+  syncToFirebase(true); // 立即推送到 Firebase，避免刷新後被覆蓋
   closeStaffMgr();
   renderAll();
-  showToast(`✓ ${MONTHS[m-1]} 業務名單已更新`);
+  showToast(`✓ ${MONTHS[m-1]} 業務名單已更新，已同步至雲端`);
 }
 
 
@@ -2439,6 +2820,225 @@ document.getElementById('settings-modal').addEventListener('click', function(e) 
 document.getElementById('staff-modal').addEventListener('click', function(e) {
   if (e.target === this) closeStaffMgr();
 });
+
+// ══════════════════════════════════════
+//  RENDER: 耗課登記
+// ══════════════════════════════════════
+// 耗課設定 key: consumption_settings:month
+function getConsumptionSettings(month) {
+  const key = `consumption_settings:${month}`;
+  return state.dailyRevenue[key] || { price2f: 0 }; // price2f: 2F 每人次單價
+}
+function saveConsumptionSetting(month, key, val) {
+  const k = `consumption_settings:${month}`;
+  if (!state.dailyRevenue[k]) state.dailyRevenue[k] = { price2f: 0 };
+  state.dailyRevenue[k][key] = parseFloat(val) || 0;
+  save();
+  syncToFirebase(true);
+  renderConsumption();
+}
+
+const WEEKDAYS_TW = ['日','一','二','三','四','五','六'];
+
+function renderConsumption() {
+  const month = state.month;
+  const days = daysInMonth(month);
+  const today = new Date();
+  const todayDay = today.getMonth()+1 === month ? today.getDate() : -1;
+  const settings = getConsumptionSettings(month);
+  const price2f = settings.price2f || 0;
+
+  // 2F 匯入資料
+  const data2f = get2fDailyData(month);
+  const has2fData = Object.keys(data2f).length > 0;
+
+  // ── 月合計計算 ──
+  let total2fHead=0, total2fRev=0;
+  let total4fNew=0, total4fOld=0, total4fHead=0, total4fRev=0;
+  let totalKgNew=0, totalKgOld=0, totalKgHead=0, totalKgRev=0;
+
+  for (let d=1; d<=days; d++) {
+    // 2F
+    const d2 = data2f[d] || {};
+    const h2 = d2.head2f || 0;
+    total2fHead += h2;
+    total2fRev  += price2f > 0 ? h2 * price2f : (d2.rev2f || 0);
+
+    // 4F
+    const d4 = getDailyRev('flagship', month, d);
+    total4fNew  += d4.new4f  || 0;
+    total4fOld  += d4.old4f  || 0;
+    total4fHead += (d4.new4f||0) + (d4.old4f||0);
+    total4fRev  += d4.rev4f  || 0;
+
+    // 國圖
+    const dg = getDailyRev('guotu', month, d);
+    totalKgNew  += dg.newKg  || 0;
+    totalKgOld  += dg.oldKg  || 0;
+    totalKgHead += (dg.newKg||0) + (dg.oldKg||0);
+    totalKgRev  += dg.revKg  || 0;
+  }
+
+  // ── KPI 列 ──
+  const isFlagship = state.store === 'flagship';
+  const kpiHtml = isFlagship ? `
+    <div class="ct-kpi-row">
+      <div class="ct-kpi">
+        <div class="ct-kpi-label">2F 教學人次</div>
+        <div class="ct-kpi-value">${total2fHead} <span style="font-size:14px;font-weight:400">人</span></div>
+        <div class="ct-kpi-sub">耗課 $${fmt(total2fRev)}</div>
+      </div>
+      <div class="ct-kpi">
+        <div class="ct-kpi-label">4F 教學人次</div>
+        <div class="ct-kpi-value">${total4fHead} <span style="font-size:14px;font-weight:400">人</span></div>
+        <div class="ct-kpi-sub">新客 ${total4fNew} ／ 舊客 ${total4fOld}　耗課 $${fmt(total4fRev)}</div>
+      </div>
+      <div class="ct-kpi">
+        <div class="ct-kpi-label">全館耗課營收</div>
+        <div class="ct-kpi-value">$${fmt(total2fRev + total4fRev)}</div>
+        <div class="ct-kpi-sub">總人次 ${total2fHead + total4fHead} 人</div>
+      </div>
+    </div>` : `
+    <div class="ct-kpi-row">
+      <div class="ct-kpi">
+        <div class="ct-kpi-label">國圖 教學人次</div>
+        <div class="ct-kpi-value">${totalKgHead} <span style="font-size:14px;font-weight:400">人</span></div>
+        <div class="ct-kpi-sub">新客 ${totalKgNew} ／ 舊客 ${totalKgOld}</div>
+      </div>
+      <div class="ct-kpi">
+        <div class="ct-kpi-label">國圖 耗課營收</div>
+        <div class="ct-kpi-value">$${fmt(totalKgRev)}</div>
+        <div class="ct-kpi-sub">本月合計</div>
+      </div>
+    </div>`;
+
+  // ── 2F 設定區（僅旗艦館） ──
+  const setting2fHtml = isFlagship ? `
+    <div class="ct-section-card">
+      <div class="ct-section-title"><span>🏫</span> 2F 耗課設定</div>
+      <div class="ct-setting-bar">
+        <label style="font-weight:600">每人次平均單價</label>
+        <input type="number" class="ct-input wide" value="${price2f||''}" placeholder="例：450"
+          onchange="saveConsumptionSetting(${month},'price2f',this.value)" style="width:100px">
+        <span style="color:var(--color-text-tertiary)">元（0 = 使用 Excel 原始金額）</span>
+        <button class="btn-secondary" onclick="trigger2fImport()" style="font-size:12px;padding:5px 12px;margin-left:auto">
+          <span>📂</span> 匯入 Excel
+        </button>
+        ${has2fData ? `<span style="font-size:12px;color:var(--color-green)">✓ 已匯入 ${total2fHead} 人次</span>
+        <button onclick="clear2fImport(${month})" style="font-size:11px;padding:4px 8px;border:1px solid var(--color-red);color:var(--color-red);background:none;border-radius:6px;cursor:pointer">清除</button>`
+        : `<span style="font-size:12px;color:var(--color-text-tertiary)">尚未匯入本月資料</span>`}
+      </div>
+    </div>` : '';
+
+  // ── 每日明細表格 ──
+  function makeRows() {
+    let rows = '';
+    for (let d=1; d<=days; d++) {
+      const dateObj = new Date(today.getFullYear(), month-1, d);
+      const wd = WEEKDAYS_TW[dateObj.getDay()];
+      const isToday = d === todayDay;
+      const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+
+      if (isFlagship) {
+        const d2 = data2f[d] || {};
+        const head2f = d2.head2f || 0;
+        const rev2f = price2f > 0 ? head2f * price2f : (d2.rev2f || 0);
+
+        const d4 = getDailyRev('flagship', month, d);
+        const new4f = d4.new4f || 0;
+        const old4f = d4.old4f || 0;
+        const head4f = new4f + old4f;
+        const rev4f  = d4.rev4f || 0;
+
+        rows += `<tr class="${isToday?'ct-today':''}" style="${isWeekend?'opacity:.6':''}">
+          <td class="ct-date-col">${month}/${d}<span class="ct-weekday">週${wd}</span></td>
+          <td>${head2f > 0 ? `<span class="ct-val">${head2f}</span>` : '<span class="ct-dash">—</span>'}</td>
+          <td>${rev2f  > 0 ? `<span class="ct-val">$${fmt(rev2f)}</span>`  : '<span class="ct-dash">—</span>'}</td>
+          <td><input type="number" class="ct-input" value="${new4f||''}" placeholder="—" min="0"
+            onchange="setDailyRev('flagship',${month},${d},'new4f',this.value)"></td>
+          <td><input type="number" class="ct-input" value="${old4f||''}" placeholder="—" min="0"
+            onchange="setDailyRev('flagship',${month},${d},'old4f',this.value)"></td>
+          <td>${head4f > 0 ? `<span class="ct-val">${head4f}</span>` : '<span class="ct-dash">—</span>'}</td>
+          <td><input type="number" class="ct-input wide" value="${rev4f||''}" placeholder="—" min="0"
+            onchange="setDailyRev('flagship',${month},${d},'rev4f',this.value)"></td>
+        </tr>`;
+      } else {
+        const dg = getDailyRev('guotu', month, d);
+        const newKg  = dg.newKg  || 0;
+        const oldKg  = dg.oldKg  || 0;
+        const headKg = newKg + oldKg;
+        const revKg  = dg.revKg  || 0;
+
+        rows += `<tr class="${isToday?'ct-today':''}" style="${isWeekend?'opacity:.6':''}">
+          <td class="ct-date-col">${month}/${d}<span class="ct-weekday">週${wd}</span></td>
+          <td><input type="number" class="ct-input" value="${newKg||''}" placeholder="—" min="0"
+            onchange="setDailyRev('guotu',${month},${d},'newKg',this.value)"></td>
+          <td><input type="number" class="ct-input" value="${oldKg||''}" placeholder="—" min="0"
+            onchange="setDailyRev('guotu',${month},${d},'oldKg',this.value)"></td>
+          <td>${headKg > 0 ? `<span class="ct-val">${headKg}</span>` : '<span class="ct-dash">—</span>'}</td>
+          <td><input type="number" class="ct-input wide" value="${revKg||''}" placeholder="—" min="0"
+            onchange="setDailyRev('guotu',${month},${d},'revKg',this.value)"></td>
+        </tr>`;
+      }
+    }
+    return rows;
+  }
+
+  const flagshipHeader = `<tr>
+    <th>日期</th>
+    <th>2F 人次<br><small style="font-weight:400">（匯入）</small></th>
+    <th>2F 耗課金額</th>
+    <th>4F 新客</th>
+    <th>4F 舊客</th>
+    <th>4F 人次</th>
+    <th>4F 耗課金額</th>
+  </tr>`;
+
+  const guotuHeader = `<tr>
+    <th>日期</th>
+    <th>新客人次</th>
+    <th>舊客人次</th>
+    <th>教學人次</th>
+    <th>耗課金額</th>
+  </tr>`;
+
+  const footerRow = isFlagship ? `<tr class="ct-subtotal">
+    <td>月合計</td>
+    <td>${total2fHead > 0 ? total2fHead+'人' : '—'}</td>
+    <td>${total2fRev  > 0 ? '$'+fmt(total2fRev)  : '—'}</td>
+    <td>${total4fNew  > 0 ? total4fNew  : '—'}</td>
+    <td>${total4fOld  > 0 ? total4fOld  : '—'}</td>
+    <td>${total4fHead > 0 ? total4fHead+'人' : '—'}</td>
+    <td>${total4fRev  > 0 ? '$'+fmt(total4fRev)  : '—'}</td>
+  </tr>` : `<tr class="ct-subtotal">
+    <td>月合計</td>
+    <td>${totalKgNew  > 0 ? totalKgNew  : '—'}</td>
+    <td>${totalKgOld  > 0 ? totalKgOld  : '—'}</td>
+    <td>${totalKgHead > 0 ? totalKgHead+'人' : '—'}</td>
+    <td>${totalKgRev  > 0 ? '$'+fmt(totalKgRev)  : '—'}</td>
+  </tr>`;
+
+  document.getElementById('tab-consumption').innerHTML = `
+    ${kpiHtml}
+    ${setting2fHtml}
+    <div class="ct-section-card">
+      <div class="ct-section-title">
+        <span>${isFlagship ? '📋' : '📋'}</span>
+        ${isFlagship ? '旗艦館 每日耗課明細' : '國圖館 每日耗課明細'}
+        <span style="font-size:11px;font-weight:400;color:var(--color-text-tertiary);margin-left:4px">
+          ${isFlagship ? '2F 人次由 Excel 匯入自動帶入；4F 手動登記' : '手動逐日登記'}
+        </span>
+      </div>
+      <div style="overflow-x:auto">
+      <table class="ct-table">
+        <thead>${isFlagship ? flagshipHeader : guotuHeader}</thead>
+        <tbody>${makeRows()}</tbody>
+        <tfoot>${footerRow}</tfoot>
+      </table>
+      </div>
+    </div>`;
+}
+
 </script>
 </body>
 </html>
