@@ -398,6 +398,24 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 
 </div><!-- .app -->
 
+<!-- 自訂購買種類 Modal -->
+<div class="modal-overlay" id="add-cat-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">＋ 自訂購買種類</div>
+    <div class="modal-desc">新增自訂種類後，所有部門的新增表單都會出現此選項。</div>
+    <div class="modal-field">
+      <label>新種類名稱</label>
+      <input type="text" id="new-cat-input" placeholder="例：成果展課程" style="width:100%"
+        onkeydown="if(event.key==='Enter')addCustomCat()">
+    </div>
+    <div id="custom-cat-list" style="margin-bottom:14px"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeAddCatModal()">關閉</button>
+      <button class="btn-primary" onclick="addCustomCat()">＋ 新增</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase Settings Modal -->
 <div class="modal-overlay" id="settings-modal" style="display:none">
   <div class="modal">
@@ -554,6 +572,20 @@ function getMonthTargets(store, month) {
 const CATS_2F = ['體驗課程','單堂(小象)','單堂(大象)','方案-小象15','方案-小象30','方案-小象48','方案-小象90','方案-大象30','方案-大象48','方案-大象90','冬夏令營','活動','商品','退款','方案補差額','幼兒園','放學趣','小象15+大象15','小象24+大象24','小象45+大象45','小象15','大象15','其他'];
 const CATS_4F = ['體驗','成人繪畫(單堂)','方案/入會','師資培訓','商品/畫布','包場包班','其他/補差額','冬夏令營','退費','退款'];
 const CATS_KG = ['體驗','成人繪畫(單堂)','方案/入會','師資培訓','商品/畫布','包場包班','其他/補差額','退費','退款'];
+let CUSTOM_CATS = JSON.parse(localStorage.getItem('customCats') || '[]');
+
+function getAllCats(dept) {
+  const base = { '2F': CATS_2F, '4F': CATS_4F, '國圖': CATS_KG }[dept] || CATS_2F;
+  // 合併自訂種類（去重）
+  const all = [...base];
+  CUSTOM_CATS.forEach(c => { if (!all.includes(c)) all.push(c); });
+  return all;
+}
+
+function saveCustomCats() {
+  localStorage.setItem('customCats', JSON.stringify(CUSTOM_CATS));
+}
+
 const DEPT_CATS = { '2F': CATS_2F, '4F': CATS_4F, '國圖': CATS_KG };
 const PAY_METHODS = ['高鉅刷卡','現金','匯款','線上藍新','4FLinepay','國圖Linepay','夯客Linepay','未入帳','其他'];
 const SOURCES = ['新單','續單','營隊','活動','商品','其他','單次'];
@@ -831,6 +863,55 @@ function manualSync() {
 // ══════════════════════════════════════
 //  SETTINGS MODAL
 // ══════════════════════════════════════
+function openAddCatModal() {
+  renderCustomCatList();
+  document.getElementById('add-cat-modal').classList.add('open');
+  setTimeout(() => document.getElementById('new-cat-input').focus(), 100);
+}
+function closeAddCatModal() {
+  document.getElementById('add-cat-modal').classList.remove('open');
+}
+function renderCustomCatList() {
+  const el = document.getElementById('custom-cat-list');
+  if (!el) return;
+  if (CUSTOM_CATS.length === 0) {
+    el.innerHTML = '<div style="color:var(--color-text-tertiary);font-size:13px">尚無自訂種類</div>';
+    return;
+  }
+  el.innerHTML = CUSTOM_CATS.map((c, i) =>
+    `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--color-bg);border-radius:6px;margin-bottom:6px;font-size:13px">
+      <span>${c}</span>
+      <button onclick="removeCustomCat(${i})" style="border:none;background:none;color:var(--color-red);cursor:pointer;font-size:16px;padding:0 4px">✕</button>
+    </div>`
+  ).join('');
+}
+function addCustomCat() {
+  const input = document.getElementById('new-cat-input');
+  const val = input.value.trim();
+  if (!val) { showToast('請輸入種類名稱', true); return; }
+  if (CUSTOM_CATS.includes(val) || CATS_2F.includes(val) || CATS_4F.includes(val) || CATS_KG.includes(val)) {
+    showToast('此種類已存在', true); return;
+  }
+  CUSTOM_CATS.push(val);
+  saveCustomCats();
+  input.value = '';
+  renderCustomCatList();
+  // 重新渲染選單
+  const dept = document.getElementById('f-dept')?.value || '2F';
+  const cats = getAllCats(dept);
+  const sel = document.getElementById('f-cat');
+  if (sel) { sel.innerHTML = cats.map(c=>`<option value="${c}">${c}</option>`).join(''); sel.value = val; }
+  showToast('✓ 已新增「' + val + '」');
+}
+function removeCustomCat(idx) {
+  const name = CUSTOM_CATS[idx];
+  if (!confirm(`確定刪除自訂種類「${name}」？\n（不影響已有的記錄）`)) return;
+  CUSTOM_CATS.splice(idx, 1);
+  saveCustomCats();
+  renderCustomCatList();
+  showToast('已刪除「' + name + '」');
+}
+
 function openSettings() {
   const cfg = fbConfig || {};
   const el = (id) => { const e = document.getElementById(id); if(e) return e; };
@@ -979,13 +1060,17 @@ function retagRecordWeeks() {
 
 function filterRecs(opts={}) {
   return state.records.filter(r => {
-    if (r.voided) return false; // exclude voided from all stats
+    if (r.voided) return false;
     const depts = getDepts();
     if (opts.dept) { if (r.dept !== opts.dept) return false; }
     else { if (!depts.includes(r.dept)) return false; }
     if (opts.month !== undefined && r.month !== opts.month) return false;
     if (opts.week && r.week !== opts.week) return false;
-    if (opts.staff && r.staff !== opts.staff) return false;
+    // 業績歸屬：嚴格比對，空 staff 的記錄不被計入任何業務個人業績
+    if (opts.staff) {
+      if (!r.staff || !r.staff.trim()) return false;
+      if (r.staff.trim() !== opts.staff.trim()) return false;
+    }
     return true;
   });
 }
@@ -1659,7 +1744,10 @@ function renderEntry() {
     <div class="entry-form">
       <div class="field"><label>日期</label><select id="f-day">${dayOpts}</select></div>
       <div class="field"><label>部門</label><select id="f-dept" onchange="updateCatOpts();updateSplitPayBlock()">${deptOpts}</select></div>
-      <div class="field"><label>購買種類</label><select id="f-cat"></select></div>
+      <div class="field">
+  <label>購買種類 <button type="button" onclick="openAddCatModal()" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--color-border);background:var(--color-bg);cursor:pointer;color:var(--color-text-secondary);margin-left:4px">＋自訂</button></label>
+  <select id="f-cat"></select>
+</div>
       <div class="field"><label>客戶來源</label><select id="f-src">${srcOpts}</select></div>
       <div class="field"><label>業務</label><select id="f-staff">${staffOpts}</select></div>
       <div class="field"><label>客戶姓名</label><input type="text" id="f-customer" placeholder="選填"></div>
@@ -1714,7 +1802,7 @@ function renderEntry() {
 function updateCatOpts() {
   const dept = document.getElementById('f-dept')?.value;
   if (!dept) return;
-  const cats = DEPT_CATS[dept] || [];
+  const cats = getAllCats(dept);
   const sel = document.getElementById('f-cat');
   if (!sel) return;
   sel.innerHTML = cats.map(c=>`<option value="${c}">${c}</option>`).join('');
@@ -1965,7 +2053,7 @@ function openEditModal(id) {
   const allStaff = [...getMonthStaff('flagship', rec.month), ...getMonthStaff('guotu', rec.month)];
   const days = daysInMonth(rec.month);
   const depts = ['2F','4F','國圖'];
-  const cats = (DEPT_CATS[rec.dept] || []).map(c=>`<option value="${c}" ${c===rec.category?'selected':''}>${c}</option>`).join('');
+  const cats = getAllCats(rec.dept).map(c=>`<option value="${c}" ${c===rec.category?'selected':''}>${c}</option>`).join('');
   const payOpts = PAY_METHODS.map(p=>`<option value="${p}" ${p===rec.pay?'selected':''}>${p}</option>`).join('');
   const pay2Opts = PAY_METHODS.map(p=>`<option value="${p}" ${p===rec.pay2?'selected':''}>${p}</option>`).join('');
   const srcOpts = SOURCES.map(s=>`<option value="${s}" ${s===rec.source?'selected':''}>${s}</option>`).join('');
@@ -2003,7 +2091,7 @@ function editUpdateCats() {
   const dept = document.getElementById('e-dept')?.value;
   const sel = document.getElementById('e-cat');
   if (!sel) return;
-  sel.innerHTML = (DEPT_CATS[dept]||[]).map(c=>`<option value="${c}">${c}</option>`).join('');
+  sel.innerHTML = getAllCats(dept).map(c=>`<option value="${c}">${c}</option>`).join('');
 }
 function closeEditModal() {
   document.getElementById('edit-modal-overlay').classList.add('hidden');
