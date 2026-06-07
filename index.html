@@ -3529,7 +3529,7 @@ function renderLeads() {
   const allStatuses = ['追蹤中','已成交','已放棄'];
 
   // ── toolbar ──
-  const staffOpts = ['全部',...staffList].map(s =>
+  const staffOpts = ['全部',...allStaffs].map(s =>
     `<option value="${s}" ${leadsFilter.staff===s?'selected':''}>${s}</option>`).join('');
   const statusOpts = ['全部',...allStatuses].map(s =>
     `<option value="${s}" ${leadsFilter.status===s?'selected':''}>${s}</option>`).join('');
@@ -3593,9 +3593,12 @@ function renderLeads() {
 
   // ── 分業務分組 ──
   // 決定要顯示哪些業務（若有篩選就只顯示該業務，否則全部）
+  // 追單中若有「待分配」業務也要顯示
+  const hasUnassigned = Object.values(leads).some(l => l.store===state.store && l.staff==='待分配');
+  const allStaffs = hasUnassigned ? [...staffList, '待分配'] : staffList;
   const displayStaffs = leadsFilter.staff === '全部'
-    ? staffList
-    : staffList.filter(s => s === leadsFilter.staff);
+    ? allStaffs
+    : allStaffs.filter(s => s === leadsFilter.staff);
 
   let groupedHtml = '';
   let totalFiltered = 0;
@@ -3898,7 +3901,14 @@ function openApptModal() {
   document.getElementById('appt-parse-status').style.color = 'var(--color-text-tertiary)';
   document.getElementById('appt-modal').classList.add('open');
 }
-function closeApptModal() { document.getElementById('appt-modal').classList.remove('open'); }
+function closeApptModal() {
+  document.getElementById('appt-modal').classList.remove('open');
+  // 還原標題與按鈕（以防是從編輯進入）
+  document.querySelector('.appt-modal-title').textContent = '📋 新增體驗預約';
+  const saveBtn = document.querySelector('.appt-modal .btn-primary');
+  saveBtn.textContent = '✓ 儲存預約';
+  saveBtn.onclick = saveAppt;
+}
 function selectApptDept(dept) {
   apptModalDept = dept;
   document.getElementById('appt-tab-2f').className = 'appt-dept-tab' + (dept==='2F'?' active-2f':'');
@@ -3939,24 +3949,31 @@ function updateApptStatus(id, status) {
   appointments[id].status = status;
   appointments[id].updatedAt = Date.now();
 
-  // 已出席 → 自動建立追單 lead（若尚未建立）
-  if (status === '已出席' && !appointments[id].leadId) {
+  // 已出席 / 已轉新單 → 自動建立追單 lead（若尚未建立）
+  if ((status === '已出席' || status === '已轉新單') && !appointments[id].leadId) {
     const a = appointments[id];
-    const customer = a.dept==='2F'
-      ? (a.parentName + (a.childName ? '／'+a.childName : ''))
-      : a.parentName;
+    // customer：用備註第一行，或科目，確保不是空白
+    const noteFirstLine = (a.note || '').split('\n')[0].trim();
+    const customer = noteFirstLine || a.subject || `${a.dept}體驗 ${a.appointDate}`;
     const lid = genLeadId();
     const weeks = getWeeks(state.month);
-    const today = new Date();
     const currentWeek = weeks[state.weekIdx] || weeks[0];
+    // staff 若空白，用「待分配」標記，追單管理仍會顯示
+    const staff = a.staff || '待分配';
     saveLead(lid, {
-      store: a.store, staff: a.staff, customer, dept: a.dept,
-      estimateAmt: 0, status: '追蹤中',
-      note: `體驗生 ${a.subject||''} ${a.appointDate} ${a.appointTime}\n${a.phone}`,
-      createdWeek: currentWeek, createdMonth: state.month, closedAmt: 0
+      store: a.store,
+      staff,
+      customer,
+      dept: a.dept,
+      estimateAmt: 0,
+      status: '追蹤中',
+      note: `【體驗生】${a.subject||''} ${a.appointDate} ${a.appointTime}\n${a.note||''}`.trim(),
+      createdWeek: currentWeek,
+      createdMonth: state.month,
+      closedAmt: 0
     });
     appointments[id].leadId = lid;
-    showToast('✓ 已標記出席，並自動建立追單');
+    showToast('✓ 已建立追單，可至「追單管理」查看');
   }
   save(); syncToFirebase(true);
   renderAppt();
@@ -3981,6 +3998,50 @@ function assignApptStaff(id, staff) {
   save(); syncToFirebase(true);
   renderAppt();
   if (staff) showToast(`✓ 已將預約分配給 ${staff}`);
+}
+
+function openEditAppt(id) {
+  const a = appointments[id];
+  if (!a) return;
+  // 把現有資料填回 modal
+  selectApptDept(a.dept || '2F');
+  document.getElementById('appt-subject').value = a.subject || '';
+  document.getElementById('appt-date').value    = a.appointDate || '';
+  document.getElementById('appt-time').value    = a.appointTime || '';
+  document.getElementById('appt-note').value    = a.note || '';
+  const feeInput = document.querySelector(`input[name="appt-fee"][value="${a.feeStatus||'未付款'}"]`);
+  if (feeInput) feeInput.checked = true;
+  const staffSel = document.getElementById('appt-staff');
+  const staffList = getStaff();
+  staffSel.innerHTML = `<option value="">── 待分配 ──</option>` + staffList.map(s=>`<option value="${s}">${s}</option>`).join('');
+  staffSel.value = a.staff || '';
+  document.getElementById('appt-paste-input').value = '';
+  document.getElementById('appt-parse-status').textContent = '';
+
+  // 改標題與儲存按鈕行為
+  document.querySelector('.appt-modal-title').textContent = '✏️ 編輯體驗預約';
+  const saveBtn = document.querySelector('.appt-modal .btn-primary');
+  saveBtn.textContent = '✓ 儲存修改';
+  saveBtn.onclick = () => saveEditAppt(id);
+  document.getElementById('appt-modal').classList.add('open');
+}
+
+function saveEditAppt(id) {
+  if (!appointments[id]) return;
+  const date  = document.getElementById('appt-date').value;
+  if (!date) { showToast('請填寫預約日期', true); return; }
+  appointments[id].dept        = apptModalDept;
+  appointments[id].subject     = document.getElementById('appt-subject').value.trim();
+  appointments[id].appointDate = date;
+  appointments[id].appointTime = document.getElementById('appt-time').value;
+  appointments[id].note        = document.getElementById('appt-note').value.trim();
+  appointments[id].staff       = document.getElementById('appt-staff').value;
+  appointments[id].feeStatus   = document.querySelector('input[name="appt-fee"]:checked')?.value || '未付款';
+  appointments[id].updatedAt   = Date.now();
+  save(); syncToFirebase(true);
+  closeApptModal();
+  showToast('✓ 已更新預約');
+  renderAppt();
 }
 
 function deleteAppt(id) {
@@ -4064,6 +4125,7 @@ function buildApptCard(id, a) {
       ${a.status!=='已出席'&&a.status!=='已轉新單'?`<button class="appt-btn green" onclick="updateApptStatus('${id}','已出席')">出席</button>`:''}
       ${a.status!=='未到'&&a.status!=='已轉新單'?`<button class="appt-btn red" onclick="updateApptStatus('${id}','未到')">未到</button>`:''}
       ${a.status==='已出席'&&!a.leadId?`<button class="appt-btn purple" onclick="updateApptStatus('${id}','已轉新單')">轉追單</button>`:''}
+      <button class="appt-btn" onclick="openEditAppt('${id}')">✏ 編輯</button>
       <button class="appt-btn" style="margin-left:auto" onclick="deleteAppt('${id}')">刪除</button>
     </div>
   </div>`;
