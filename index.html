@@ -115,6 +115,16 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 .staff-table td:first-child { text-align: left; font-weight: 500; font-size: 13px; }
 .staff-table tr:last-child td { border-bottom: none; }
 .staff-table tr.staff-total td { background: var(--color-bg); font-weight: 600; }
+.staff-table .dept-sub-row td { font-size:11px;color:var(--color-text-tertiary);padding:2px 12px;border-bottom:none;background:transparent; }
+.staff-table .detail-row td { padding:0;border-bottom:none; }
+.weekly-detail { display:none;background:var(--color-bg);border-top:1px dashed var(--color-border);padding:8px 12px; }
+.weekly-detail.open { display:block; }
+.weekly-detail table { width:100%;font-size:11px;border-collapse:collapse; }
+.weekly-detail table td,.weekly-detail table th { padding:3px 8px;border-bottom:1px solid var(--color-border-light);color:var(--color-text-secondary);text-align:left; }
+.weekly-detail table th { font-weight:600;color:var(--color-text-primary); }
+.weekly-detail table td:last-child,.weekly-detail table th:last-child { text-align:right; }
+.staff-toggle { cursor:pointer;text-decoration:underline dotted;user-select:none; }
+.staff-toggle:hover { color:var(--color-accent); }
 .staff-name-cell { display: flex; flex-direction: column; gap: 3px; }
 .staff-progress { width: 100%; height: 3px; background: var(--color-border); border-radius: 2px; overflow: hidden; }
 .staff-progress-bar { height: 100%; border-radius: 2px; }
@@ -1670,6 +1680,15 @@ function show2fDetail() {
 // ══════════════════════════════════════
 //  RENDER: WEEKLY + 月目標（合併）
 // ══════════════════════════════════════
+function toggleWeeklyDetail(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('open');
+  // 更新箭頭符號
+  const toggle = el.closest('table')?.querySelector(`[onclick="toggleWeeklyDetail('${id}')"] span:last-child`);
+  if (toggle) toggle.textContent = el.classList.contains('open') ? ' ▴' : ' ▾';
+}
+
 function renderWeekly() {
   const weeks = getWeeks(state.month);
   const week = weeks[state.weekIdx] || weeks[0];
@@ -1680,64 +1699,129 @@ function renderWeekly() {
     `<button class="week-btn ${i===state.weekIdx?'active':''}" onclick="state.weekIdx=${i};renderWeekly()">第${i+1}週 (${w})</button>`
   ).join('');
 
+  const PLAN_CATS = ['方案/入會','方案'];
+  const CAMP_CATS = ['冬夏令營','活動','包場包班','師資培訓'];
+  const REFUND_CATS = ['退款','退費'];
+
+  // ── helper: 計算一組 records 的各欄數字 ──
+  function calcStaffWeekStats(recs) {
+    const tiRecs  = recs.filter(r => r.category && r.category.includes('體驗'));
+    const nsRecs  = recs.filter(r => r.source === '新單' && (r.dept==='2F' || PLAN_CATS.includes(r.category)));
+    const xuRecs  = recs.filter(r => r.source === '續單' && (r.dept==='2F' || PLAN_CATS.includes(r.category)));
+    const yqRecs  = recs.filter(r => CAMP_CATS.includes(r.category));
+    const rfRecs  = recs.filter(r => REFUND_CATS.includes(r.category));
+    const pdRecs  = recs.filter(r => r.pending);
+    const spRecs  = recs.filter(r =>
+      !nsRecs.includes(r) && !xuRecs.includes(r) &&
+      !yqRecs.includes(r) && !rfRecs.includes(r)
+    );
+    return {
+      ti:   tiRecs.length,
+      ns:   nsRecs.length,  nsAmt:  nsRecs.reduce((s,r)=>s+r.amount,0),
+      xu:   xuRecs.length,  xuAmt:  xuRecs.reduce((s,r)=>s+r.amount,0),
+      yq:   yqRecs.reduce((s,r)=>s+r.amount,0),
+      sp:   spRecs.reduce((s,r)=>s+r.amount,0),
+      rf:   rfRecs.reduce((s,r)=>s+r.amount,0),  rfCnt: rfRecs.length,
+      pd:   pdRecs.reduce((s,r)=>s+r.amount,0),  pdCnt: pdRecs.length,
+    };
+  }
+
   let rows = '';
-  let totals = {ti:0,ns:0,nsAmt:0,xu:0,xuAmt:0,yq:0,sp:0,total:0};
+  let totals = {ti:0,ns:0,nsAmt:0,xu:0,xuAmt:0,yq:0,sp:0,rf:0,pd:0,total:0};
 
   for (const staff of staffList) {
     const recs = filterRecs({ month: state.month, week, staff });
-    // 體驗接單：種類含「體驗」的筆數
-    const PLAN_CATS = ['方案/入會','方案'];
-    const CAMP_CATS = ['冬夏令營','活動','包場包班','師資培訓'];
-    const tiRecs = recs.filter(r => r.category && r.category.includes('體驗'));
-    const ti = tiRecs.length;
-
-    // ── 新單 / 續單 邏輯（依部門不同） ──
-    // 2F：只要來源=新單 就算新單（不限種類）；只要來源=續單 就算續單（不限種類）
-    // 4F / 國圖：種類必須為方案/入會 才算新單/續單
-    const is2F = (r) => r.dept === '2F';
-    const nsRecs = recs.filter(r =>
-      r.source === '新單' && (is2F(r) || PLAN_CATS.includes(r.category))
-    );
-    const ns = nsRecs.length;
-    const nsAmt = nsRecs.reduce((s,r)=>s+r.amount,0);
-
-    const xuRecs = recs.filter(r =>
-      r.source === '續單' && (is2F(r) || PLAN_CATS.includes(r.category))
-    );
-    const xu = xuRecs.length;
-    const xuAmt = xuRecs.reduce((s,r)=>s+r.amount,0);
-
-    // 營隊/活動：種類為冬夏令營、活動、包場包班、師資培訓
-    const yq = recs.filter(r => CAMP_CATS.includes(r.category)).reduce((s,r)=>s+r.amount,0);
-    // 商品/其他：未計入新單、續單、營隊的金額
-    const sp = recs.filter(r => {
-      // 已計入新單
-      if (nsRecs.includes(r)) return false;
-      // 已計入續單
-      if (xuRecs.includes(r)) return false;
-      // 已計入營隊
-      if (CAMP_CATS.includes(r.category)) return false;
-      return true;
-    }).reduce((s,r)=>s+r.amount,0);
-    const weekTotal = nsAmt + xuAmt + yq + sp;
+    const st = calcStaffWeekStats(recs);
+    const weekTotal = st.nsAmt + st.xuAmt + st.yq + st.sp + st.rf; // rf 是負數，會自動扣
     const staffMonthTotal = filterRecs({ month: state.month, staff }).reduce((s,r)=>s+r.amount,0);
     const monthTarget = tgt[staff] || 0;
     const mRate = monthTarget > 0 ? staffMonthTotal / monthTarget : null;
+    const barPct = Math.min(100,(mRate||0)*100);
 
-    totals.ti+=ti; totals.ns+=ns; totals.nsAmt+=nsAmt; totals.xu+=xu; totals.xuAmt+=xuAmt; totals.yq+=yq; totals.sp+=sp; totals.total+=weekTotal;
+    totals.ti+=st.ti; totals.ns+=st.ns; totals.nsAmt+=st.nsAmt;
+    totals.xu+=st.xu; totals.xuAmt+=st.xuAmt; totals.yq+=st.yq;
+    totals.sp+=st.sp; totals.rf+=st.rf; totals.pd+=st.pd;
+    totals.total+=weekTotal;
 
-    const barPct = Math.min(100, (mRate||0)*100);
+    // ── 跨部門分列 ──
+    const deptList = [...new Set(recs.map(r=>r.dept))].sort();
+    let deptSubRows = '';
+    if (deptList.length > 1) {
+      for (const dept of deptList) {
+        const dRecs = recs.filter(r=>r.dept===dept);
+        const dAmt  = dRecs.reduce((s,r)=>s+r.amount,0);
+        if (dAmt === 0) continue;
+        deptSubRows += `<tr class="dept-sub-row">
+          <td colspan="2" style="padding-left:28px;color:var(--color-text-tertiary)">${dept}</td>
+          <td colspan="7" style="text-align:right;color:var(--color-text-tertiary)">$${fmt(dAmt)}</td>
+          <td></td>
+        </tr>`;
+      }
+    }
+
+    // ── 退款/未入帳欄 ──
+    const rfPdCell = [
+      st.rfCnt > 0 ? `<span style="color:var(--color-red);font-size:12px">退款 -$${fmt(Math.abs(st.rf))}</span>` : '',
+      st.pdCnt > 0 ? `<span style="color:#BE185D;font-size:12px">未入帳 $${fmt(st.pd)}</span>` : '',
+    ].filter(Boolean).join('<br>') || '—';
+
+    // ── 每日明細（本週，點名字展開） ──
+    const detailId = `detail-${staff.replace(/\s/g,'-')}`;
+    const dayMap = {};
+    for (const r of recs) {
+      const k = `${r.month}/${String(r.day).padStart(2,'0')}`;
+      if (!dayMap[k]) dayMap[k] = [];
+      dayMap[k].push(r);
+    }
+    let detailRows = '';
+    for (const day of Object.keys(dayMap).sort()) {
+      for (const r of dayMap[day]) {
+        const isPending = r.pending ? '<span class="pending-mark">⏰未入帳</span>' : '';
+        const isRefund  = REFUND_CATS.includes(r.category) ? '<span class="refund-mark">退款</span>' : '';
+        detailRows += `<tr>
+          <td>${day}</td>
+          <td>${r.dept}</td>
+          <td>${r.category||'—'}${isRefund}</td>
+          <td>${r.customer||'—'}${isPending}</td>
+          <td style="text-align:right;color:${r.amount<0?'var(--color-red)':'var(--color-text-primary)'}">
+            ${r.amount<0?'-':''}$${fmt(Math.abs(r.amount))}
+          </td>
+        </tr>`;
+      }
+    }
+    const detailHtml = detailRows
+      ? `<table><thead><tr>
+           <th style="text-align:left">日期</th><th style="text-align:left">部門</th>
+           <th style="text-align:left">種類</th><th style="text-align:left">客戶</th>
+           <th style="text-align:right">金額</th>
+         </tr></thead><tbody>${detailRows}</tbody></table>`
+      : '<div style="color:var(--color-text-tertiary);font-size:12px;padding:4px">本週無紀錄</div>';
+
     rows += `<tr>
-      <td><div class="staff-name-cell"><span>${staff}</span>${monthTarget>0?`<div class="staff-progress"><div class="staff-progress-bar" style="width:${barPct}%;background:${rateBarColor(mRate)}"></div></div>`:''}</div></td>
-      <td style="color:var(--color-text-secondary)">${ti}</td>
-      <td>${ns}</td>
-      <td style="text-align:right">$${fmt(nsAmt)}</td>
-      <td>${xu}</td>
-      <td style="text-align:right">$${fmt(xuAmt)}</td>
-      <td style="text-align:right">$${fmt(yq)}</td>
-      <td style="text-align:right">$${fmt(sp)}</td>
+      <td>
+        <div class="staff-name-cell">
+          <span class="staff-toggle" onclick="toggleWeeklyDetail('${detailId}')" title="點擊展開明細">
+            ${staff} <span style="font-size:10px;color:var(--color-text-tertiary)">▾</span>
+          </span>
+          ${monthTarget>0?`<div class="staff-progress"><div class="staff-progress-bar" style="width:${barPct}%;background:${rateBarColor(mRate)}"></div></div>`:''}
+        </div>
+      </td>
+      <td style="color:var(--color-text-secondary)">${st.ti}</td>
+      <td>${st.ns}</td>
+      <td style="text-align:right">$${fmt(st.nsAmt)}</td>
+      <td>${st.xu}</td>
+      <td style="text-align:right">$${fmt(st.xuAmt)}</td>
+      <td style="text-align:right">$${fmt(st.yq)}</td>
+      <td style="text-align:right">$${fmt(st.sp)}</td>
+      <td style="text-align:right">${rfPdCell}</td>
       <td style="text-align:right;font-weight:600">$${fmt(weekTotal)}</td>
       <td>${rateBadge(mRate)}</td>
+    </tr>
+    ${deptSubRows}
+    <tr class="detail-row">
+      <td colspan="11">
+        <div class="weekly-detail" id="${detailId}">${detailHtml}</div>
+      </td>
     </tr>`;
   }
 
@@ -1749,6 +1833,7 @@ function renderWeekly() {
     <td style="text-align:right">$${fmt(totals.xuAmt)}</td>
     <td style="text-align:right">$${fmt(totals.yq)}</td>
     <td style="text-align:right">$${fmt(totals.sp)}</td>
+    <td style="text-align:right;font-size:11px">${totals.rf<0?`<span style="color:var(--color-red)">退款 -$${fmt(Math.abs(totals.rf))}</span>`:''}${totals.pd>0?`<br><span style="color:#BE185D">未入帳 $${fmt(totals.pd)}</span>`:''}</td>
     <td style="text-align:right">$${fmt(totals.total)}</td>
     <td></td>
   </tr>`;
@@ -1824,6 +1909,7 @@ function renderWeekly() {
         <th class="amt-col">續單金額</th>
         <th class="amt-col">營隊/活動</th>
         <th class="amt-col">商品/其他</th>
+        <th class="amt-col">退款/未入帳</th>
         <th class="amt-col">週合計</th>
         <th>月達成率</th>
       </tr></thead>
@@ -1873,10 +1959,18 @@ function renderAnnual() {
     const cashIncome = state.records
       .filter(r => !r.voided && r.month === m && r.dept === annualDept)
       .reduce((s,r) => s+r.amount, 0);
-    // manual revenue (operating revenue)
+    // 營業收入：2F 從 Excel 匯入，4F/國圖 從 salaryData/daily 彙總
     const msKey = `${store}:${m}`;
     const ms = state.manualStats[msKey] || {};
-    const revenue = annualDept === '2F' ? (ms.rev2f||0) : annualDept === '4F' ? (ms.rev4f||0) : (ms.revKg||0);
+    let revenue = 0;
+    if (annualDept === '2F') {
+      const d2f = get2fDailyData(m);
+      revenue = Object.values(d2f).reduce((s,d) => s+(d.rev2f||0), 0);
+    } else if (annualDept === '4F') {
+      for (let d=1; d<=daysInMonth(m); d++) revenue += get4fDailyFromSalary(m,d).sales;
+    } else {
+      for (let d=1; d<=daysInMonth(m); d++) revenue += getKgDailyFromSalary(m,d).sales;
+    }
 
     const rate = target > 0 ? cashIncome / target : null;
     const diff = cashIncome - target;
@@ -1981,10 +2075,17 @@ function renderAnnual() {
   for (let m = 1; m < currentMonth + 1; m++) {
     if (m > currentMonth) break;
     const cashIncome = state.records.filter(r=>!r.voided&&r.month===m&&r.dept===annualDept).reduce((s,r)=>s+r.amount,0);
-    const msKey = `${store}:${m}`;
-    const ms = state.manualStats[msKey] || {};
-    const revenue = annualDept === '2F' ? (ms.rev2f||0) : annualDept === '4F' ? (ms.rev4f||0) : (ms.revKg||0);
-    const head = annualDept === '2F' ? (ms.head2f||0) : annualDept === '4F' ? (ms.head4f||0) : (ms.headKg||0);
+    let revenue2 = 0, head2 = 0;
+    if (annualDept === '2F') {
+      const d2f = get2fDailyData(m);
+      revenue2 = Object.values(d2f).reduce((s,d) => s+(d.rev2f||0), 0);
+      head2    = Object.values(d2f).reduce((s,d) => s+(d.head2f||0), 0);
+    } else if (annualDept === '4F') {
+      for (let d=1; d<=daysInMonth(m); d++) { const r=get4fDailyFromSalary(m,d); revenue2+=r.sales; head2+=r.headCount; }
+    } else {
+      for (let d=1; d<=daysInMonth(m); d++) { const r=getKgDailyFromSalary(m,d); revenue2+=r.sales; head2+=r.headCount; }
+    }
+    const revenue = revenue2, head = head2;
     if (cashIncome > 0 || revenue > 0) {
       revSummaryRows += `<tr>
         <td>${MONTHS[m-1]}</td>
