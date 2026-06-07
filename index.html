@@ -3677,18 +3677,23 @@ function quickParseAppt(raw) {
   if (!raw) return;
   const status = document.getElementById('appt-parse-status');
 
-  // 日期：5/17、5月17日、5-17、05/17
+  // ── 優先從含「安排/體驗/時段/預約」的行找日期時間 ──
+  const lines = raw.split(/\n/);
+  const apptLine = lines.find(l => /安排|體驗|時段|預約|課程|上課/.test(l)) || '';
+  const searchIn = apptLine || raw; // 找不到關鍵行才 fallback 全文
+
+  // 日期：6/13、6月13日、06-13（只用 searchIn，避免抓到出生年月）
   let appointDate = '';
-  const dateM = raw.match(/(\d{1,2})[\/月\-](\d{1,2})[日號]?/);
+  const dateM = searchIn.match(/(\d{1,2})[\/月](\d{1,2})[日號]?/);
   if (dateM) {
     appointDate = '2026-' + String(dateM[1]).padStart(2,'0') + '-' + String(dateM[2]).padStart(2,'0');
     document.getElementById('appt-date').value = appointDate;
   }
 
-  // 時間：13:30、下午5點、17:00、13:30-15:00（取開始）
+  // 時間：13:30、下午5點、17:00、13:30-15:00（取開始，從 searchIn 找）
   let appointTime = '';
-  const pmM = raw.match(/下午\s*(\d{1,2})(?:[:：點](\d{1,2}))?/);
-  const hmM = raw.match(/(\d{1,2})[:：](\d{2})/);
+  const pmM = searchIn.match(/下午\s*(\d{1,2})(?:[:：點](\d{1,2}))?/);
+  const hmM = searchIn.match(/(\d{1,2})[:：](\d{2})/);
   if (pmM) {
     let h = parseInt(pmM[1]); if (h < 12) h += 12;
     appointTime = String(h).padStart(2,'0') + ':' + (pmM[2] ? String(pmM[2]).padStart(2,'0') : '00');
