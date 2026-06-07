@@ -625,6 +625,17 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
       若要限制存取，可在 Firebase Console → Realtime Database → 規則 貼入：<br>
       <code style="font-family:monospace">{"rules":{".read":true,".write":true}}</code>（測試用，正式使用請加 auth 限制）
     </div>
+    <div style="border-top:1px solid var(--color-border);margin:14px 0 12px;padding-top:14px">
+      <div style="font-weight:600;font-size:13px;margin-bottom:6px">✨ Anthropic API Key（自動解析體驗預約用）</div>
+      <div style="font-size:12px;color:var(--color-text-tertiary);margin-bottom:8px;line-height:1.6">
+        填入後存入 Firebase，所有人打開頁面時自動讀取，不需每台電腦分別設定。<br>
+        前往 <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--color-accent)">console.anthropic.com</a> 取得 API Key。
+      </div>
+      <div class="modal-field" style="margin-bottom:0">
+        <label>ANTHROPIC API KEY</label>
+        <input type="password" id="anthropic-api-key" placeholder="sk-ant-api03-...">
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeSettings()">取消</button>
       <button class="btn-secondary" onclick="testFirebaseConnection()"><span>🔌</span> 測試連線</button>
@@ -929,6 +940,7 @@ let state = {
   entryDeptFilter: '所有',
   salary4fDaily: {} // 從 salaryData/daily 截取的 4F 每日資料
 };
+let anthropicApiKey = ''; // 從 Firebase 讀取，所有裝置共用
 // 週目標：{ "flagship:6:6/2-6/8": { 布丁: 80000, ... } }
 let weekTargets = JSON.parse(localStorage.getItem('weekTargets') || '{}');
 // 追單清單（leads）：{ id: { store,staff,customer,dept,estimateAmt,status,note,createdWeek,createdMonth,updatedAt,closedAmt } }
@@ -996,6 +1008,9 @@ function startFirebaseListener() {
     if (data.settings && data.settings.invPrefixes) {
       Object.assign(state.invPrefixes, data.settings.invPrefixes);
       changed = true;
+    }
+    if (data.settings && data.settings.anthropicKey) {
+      anthropicApiKey = data.settings.anthropicKey;
     }
     if (data.dailyRevenue && Object.keys(data.dailyRevenue).length > 0) {
       Object.assign(state.dailyRevenue, data.dailyRevenue);
@@ -1147,7 +1162,7 @@ async function syncToFirebase(silent=false) {
       manualStats: state.manualStats,
       monthStaff: monthStaff,
       dailyRevenue: state.dailyRevenue,
-      settings: { invPrefixes: state.invPrefixes },
+      settings: { invPrefixes: state.invPrefixes, anthropicKey: anthropicApiKey },
       updatedAt: Date.now()
     });
     syncStatus = 'live'; updateSyncDot();
@@ -1177,6 +1192,7 @@ async function loadFromSheets(silent=false) {
     if (data.manualStats) Object.assign(state.manualStats, data.manualStats);
     if (data.monthStaff) Object.assign(monthStaff, data.monthStaff);
     if (data.settings && data.settings.invPrefixes) Object.assign(state.invPrefixes, data.settings.invPrefixes);
+    if (data.settings && data.settings.anthropicKey) anthropicApiKey = data.settings.anthropicKey;
     if (data.dailyRevenue) Object.assign(state.dailyRevenue, data.dailyRevenue);
     retagRecordWeeks(); save(); renderAll();
     showToast('✓ 已載入 ' + ((data.records||[]).length) + ' 筆記錄');
@@ -1257,6 +1273,8 @@ function removeCustomCat(dept, idx) {
 }
 
 function openSettings() {
+  const akInput = document.getElementById('anthropic-api-key');
+  if (akInput) akInput.value = anthropicApiKey ? '••••••••（已設定）' : '';
   const cfg = fbConfig || {};
   const el = (id) => { const e = document.getElementById(id); if(e) return e; };
   if(el('fb-apiKey')) el('fb-apiKey').value = cfg.apiKey || '';
@@ -1270,6 +1288,11 @@ function openSettings() {
 }
 function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
 function saveFirebaseSettings() {
+  // 若有填 Anthropic Key 則一起儲存
+  const akInput = document.getElementById('anthropic-api-key');
+  if (akInput && akInput.value.trim()) {
+    anthropicApiKey = akInput.value.trim();
+  }
   // 檢查 Firebase SDK 是否載入
   if (typeof firebase === 'undefined') {
     showToast('❌ Firebase SDK 未載入。請確認網路連線，或改用 GitHub Pages 開啟而非直接從本機開啟。', true);
@@ -3682,25 +3705,44 @@ ${raw}
 回傳格式範例：
 {"dept":"2F","parentName":"江曼荷","phone":"0905730068","childName":"彭相翕","childBirth":"3/14","subject":"黏土課","appointDate":"2026-06-04","appointTime":"17:00","note":""}`;
 
+  if (!anthropicApiKey) {
+    status.textContent = '請先在「⚙ 設定」中填入 Anthropic API Key';
+    status.style.color = 'var(--color-red)';
+    btn.disabled = false; btn.textContent = '✨ 自動解析';
+    return;
+  }
+
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
+        max_tokens: 600,
         messages: [{ role: 'user', content: prompt }]
       })
     });
     const data = await res.json();
+
+    // API 回傳錯誤時顯示詳細訊息
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+
     const text = (data.content || []).map(c => c.text || '').join('').trim();
 
     let parsed;
     try {
-      const clean = text.replace(/```json|```/g, '').trim();
+      // 嘗試從回傳文字中提取 JSON（可能包在 markdown code block 裡）
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const clean = jsonMatch ? jsonMatch[0] : text.replace(/```json|```/g, '').trim();
       parsed = JSON.parse(clean);
     } catch(e) {
-      throw new Error('無法解析 AI 回傳格式');
+      // 若還是失敗，顯示實際回傳內容方便排查
+      throw new Error('格式錯誤，AI 回傳：' + text.slice(0, 100));
     }
 
     // 填入表單
