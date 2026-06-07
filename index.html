@@ -655,16 +655,14 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
     <!-- 貼上解析區 -->
     <div id="appt-paste-section" style="margin-bottom:14px">
       <label style="font-size:12px;font-weight:600;color:var(--color-text-secondary);display:block;margin-bottom:4px">
-        📋 貼上原始資料（LINE訊息、表單回覆等任何格式）
+        📋 貼上原始資料，自動抓取日期與時間
       </label>
-      <textarea id="appt-paste-input" rows="4"
+      <textarea id="appt-paste-input" rows="3"
         style="width:100%;border:1px dashed var(--color-accent);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;background:#F0F9FF;color:var(--color-text-primary);resize:vertical;box-sizing:border-box"
-        placeholder="直接貼上，例如：&#10;家長姓名：江曼荷&#10;聯絡電話：0905730068&#10;寶貝姓名：彭相翕&#10;想安排體驗：6/4星期四17:00黏土課"></textarea>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-        <button class="btn-primary" id="appt-parse-btn" onclick="parseApptText()" style="font-size:12px;padding:5px 14px">
-          ✨ 自動解析
-        </button>
-        <span id="appt-parse-status" style="font-size:12px;color:var(--color-text-tertiary)"></span>
+        placeholder="貼上任何文字，例如：6/13 星期六 13:30 黏土課"
+        oninput="quickParseAppt(this.value)"></textarea>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <span id="appt-parse-status" style="font-size:12px;color:var(--color-text-tertiary)">貼上後自動解析日期時間</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px;margin:10px 0 4px">
         <div style="flex:1;height:1px;background:var(--color-border)"></div>
@@ -711,8 +709,24 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
         <input id="appt-time" type="time" placeholder="17:00">
       </div>
       <div class="appt-form-group full">
-        <label>備註</label>
-        <textarea id="appt-note" rows="2" placeholder="其他說明..."></textarea>
+        <label>備註 <span style="font-weight:400;color:var(--color-text-tertiary)">（貼上的原始資料會自動帶入）</span></label>
+        <textarea id="appt-note" rows="3" placeholder="原始訊息或其他說明..."></textarea>
+      </div>
+      <div class="appt-form-group full">
+        <label>體驗費</label>
+        <div style="display:flex;gap:16px;align-items:center;padding:6px 0">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;font-size:13px">
+            <input type="radio" name="appt-fee" id="appt-fee-unpaid" value="未付款" checked
+              style="accent-color:var(--color-red);width:15px;height:15px">
+            <span style="color:var(--color-red);font-weight:600">未付款</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;font-size:13px">
+            <input type="radio" name="appt-fee" id="appt-fee-paid" value="已付款"
+              style="accent-color:var(--color-green);width:15px;height:15px">
+            <span style="color:var(--color-green);font-weight:600">已付款</span>
+          </label>
+
+        </div>
       </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
@@ -3672,7 +3686,48 @@ let apptModalDept = '2F'; // 目前 modal 選的 dept
 
 function genApptId() { return 'appt_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
 
-// ── 解析核心工具 ──
+// ── 即時日期時間解析（輸入即觸發）──
+function quickParseAppt(raw) {
+  if (!raw) return;
+  const status = document.getElementById('appt-parse-status');
+
+  // 日期：5/17、5月17日、5-17、05/17
+  let appointDate = '';
+  const dateM = raw.match(/(\d{1,2})[\/月\-](\d{1,2})[日號]?/);
+  if (dateM) {
+    appointDate = '2026-' + String(dateM[1]).padStart(2,'0') + '-' + String(dateM[2]).padStart(2,'0');
+    document.getElementById('appt-date').value = appointDate;
+  }
+
+  // 時間：13:30、下午5點、17:00、13:30-15:00（取開始）
+  let appointTime = '';
+  const pmM = raw.match(/下午\s*(\d{1,2})(?:[:：點](\d{1,2}))?/);
+  const hmM = raw.match(/(\d{1,2})[:：](\d{2})/);
+  if (pmM) {
+    let h = parseInt(pmM[1]); if (h < 12) h += 12;
+    appointTime = String(h).padStart(2,'0') + ':' + (pmM[2] ? String(pmM[2]).padStart(2,'0') : '00');
+  } else if (hmM) {
+    appointTime = String(hmM[1]).padStart(2,'0') + ':' + hmM[2];
+  }
+  if (appointTime) document.getElementById('appt-time').value = appointTime;
+
+  // 原文自動帶入備註
+  document.getElementById('appt-note').value = raw.trim();
+
+  // 狀態提示
+  const got = [];
+  if (appointDate) got.push('日期 ' + appointDate.slice(5).replace('-','/'));
+  if (appointTime) got.push('時間 ' + appointTime);
+  if (got.length > 0) {
+    status.textContent = '✓ 已抓到：' + got.join('、');
+    status.style.color = 'var(--color-green)';
+  } else {
+    status.textContent = '找不到日期或時間，請手動填寫';
+    status.style.color = 'var(--color-text-tertiary)';
+  }
+}
+
+// ── 解析核心工具（多孩子完整解析保留）──
 function extractField(text, keys) {
   for (const key of keys) {
     const re = new RegExp(key + '[\uff1a: \t]+([^\n]+)', 'i');
@@ -3849,9 +3904,11 @@ function openApptModal() {
   document.getElementById('appt-childBirth').value = '';
   document.getElementById('appt-subject').value = '';
   document.getElementById('appt-note').value = '';
+  document.getElementById('appt-fee-unpaid').checked = true;
   selectApptDept('2F');
   document.getElementById('appt-paste-input').value = '';
-  document.getElementById('appt-parse-status').textContent = '';
+  document.getElementById('appt-parse-status').textContent = '貼上後自動解析日期時間';
+  document.getElementById('appt-parse-status').style.color = 'var(--color-text-tertiary)';
   document.getElementById('appt-modal').classList.add('open');
 }
 function closeApptModal() { document.getElementById('appt-modal').classList.remove('open'); }
@@ -3884,6 +3941,7 @@ function saveAppt() {
     appointDate: date,
     appointTime: time,
     staff: staff || '',
+    feeStatus: document.querySelector('input[name="appt-fee"]:checked')?.value || '未付款',
     status: '待確認',
     note: document.getElementById('appt-note').value.trim(),
     leadId: '',
@@ -3921,6 +3979,18 @@ function updateApptStatus(id, status) {
   }
   save(); syncToFirebase(true);
   renderAppt();
+}
+
+function toggleApptFee(id) {
+  if (!appointments[id]) return;
+  const cycle = ['未付款','已付款'];
+  const cur = appointments[id].feeStatus || '未付款';
+  const next = cycle[(cycle.indexOf(cur)+1) % cycle.length];
+  appointments[id].feeStatus = next;
+  appointments[id].updatedAt = Date.now();
+  save(); syncToFirebase(true);
+  renderAppt();
+  showToast(`💳 已更新為「${next}」`);
 }
 
 function assignApptStaff(id, staff) {
@@ -3985,7 +4055,15 @@ function buildApptCard(id, a) {
         ${leadLink}
       </div>
     </div>
-    <div class="appt-time">📅 ${a.appointDate} ${a.appointTime}</div>
+    <div class="appt-time" style="display:flex;align-items:center;gap:8px">
+      <span>📅 ${a.appointDate} ${a.appointTime}</span>
+      ${a.feeStatus ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;${
+        a.feeStatus==='已付款' ? 'background:var(--color-green-bg);color:var(--color-green)' :
+        'background:#FEE2E2;color:var(--color-red)'
+      }">${a.feeStatus}</span>` : ''}
+      <span style="font-size:11px;cursor:pointer;color:var(--color-text-tertiary)" 
+        onclick="toggleApptFee('${id}')" title="切換付款狀態">💳</span>
+    </div>
     <div class="appt-meta">
       <span>科目：${a.subject||'—'}</span>
       <span style="display:inline-flex;align-items:center;gap:4px">接待：${a.staff
