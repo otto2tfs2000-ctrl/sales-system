@@ -125,6 +125,97 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 .weekly-detail table td:last-child,.weekly-detail table th:last-child { text-align:right; }
 .staff-toggle { cursor:pointer;text-decoration:underline dotted;user-select:none; }
 .staff-toggle:hover { color:var(--color-accent); }
+/* ── 週目標卡片 ── */
+.week-target-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px; }
+.week-target-card { background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px 16px; }
+.week-target-hdr { display:flex;justify-content:space-between;align-items:center;margin-bottom:4px; }
+.week-target-name { font-weight:600;font-size:13px; }
+.week-target-input { width:100%;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:4px 8px;font-size:13px;background:var(--color-bg);color:var(--color-text-primary); }
+.week-target-input:focus { outline:none;border-color:var(--color-accent); }
+.lead-mini-section { border-top:1px dashed var(--color-border);padding-top:8px;margin-top:8px; }
+.lead-mini-row { display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:4px 0;border-bottom:1px solid var(--color-border-light);font-size:11px; }
+.lead-mini-cust { font-weight:600;color:var(--color-text-primary); }
+.lead-mini-dept { grid-column:2;grid-row:1;text-align:right; }
+.lead-mini-amt { color:var(--color-accent);font-weight:600; }
+.lead-mini-note { grid-column:1/-1;color:var(--color-text-tertiary); }
+/* ── 追單管理頁 ── */
+.leads-toolbar { display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px; }
+.leads-toolbar select,.leads-toolbar input { font-size:13px;padding:5px 10px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text-primary); }
+.leads-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px; }
+.lead-card { background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px 16px;display:flex;flex-direction:column;gap:6px; }
+.lead-card.status-成交 { border-left:3px solid var(--color-green); }
+.lead-card.status-放棄 { border-left:3px solid var(--color-border);opacity:.6; }
+.lead-card.status-追蹤 { border-left:3px solid var(--color-accent); }
+.lead-card-hdr { display:flex;justify-content:space-between;align-items:flex-start;gap:8px; }
+.lead-card-name { font-weight:700;font-size:14px; }
+.lead-card-amt { font-size:13px;font-weight:600;color:var(--color-accent); }
+.lead-card-meta { font-size:11px;color:var(--color-text-tertiary);display:flex;gap:8px;flex-wrap:wrap; }
+.lead-card-note { font-size:12px;color:var(--color-text-secondary); }
+.lead-card-note textarea { width:100%;font-size:12px;padding:4px 6px;border:1px solid var(--color-border);border-radius:4px;background:var(--color-bg);color:var(--color-text-primary);resize:vertical;min-height:36px; }
+.lead-card-actions { display:flex;gap:6px;flex-wrap:wrap;margin-top:4px; }
+.lead-btn { font-size:11px;padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--color-border);background:var(--color-bg);cursor:pointer;color:var(--color-text-secondary); }
+.lead-btn:hover { background:var(--color-border); }
+.lead-btn.green { border-color:var(--color-green);color:var(--color-green); }
+.lead-btn.red { border-color:var(--color-red);color:var(--color-red); }
+.leads-empty { text-align:center;padding:40px;color:var(--color-text-tertiary);font-size:14px; }
+.leads-staff-group { margin-bottom:20px; }
+.leads-staff-hdr { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:8px 12px;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);margin-bottom:10px; }
+.leads-staff-name { font-weight:700;font-size:14px; }
+.leads-staff-stats { display:flex;align-items:center;gap:12px;font-size:12px;color:var(--color-text-secondary);flex-wrap:wrap; }
+.lead-status-badge { font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px; }
+.lead-status-追蹤中 { background:#EEF2FF;color:#4F46E5; }
+.lead-status-已成交 { background:var(--color-green-bg);color:var(--color-green); }
+.lead-status-已放棄 { background:#F3F4F6;color:#9CA3AF; }
+/* ── 體驗預約 ── */
+.appt-notice-box { border-radius:var(--radius-md);padding:12px 16px;margin-bottom:10px;border:1px solid; }
+.appt-notice-today { background:#FFF7ED;border-color:#FED7AA;color:#C2410C; }
+.appt-notice-tomorrow { background:#EFF6FF;border-color:#BFDBFE;color:#1D4ED8; }
+.appt-notice-weekend { background:#F5F3FF;border-color:#DDD6FE;color:#6D28D9; }
+.appt-notice-title { font-weight:700;font-size:13px;margin-bottom:6px; }
+.appt-notice-item { font-size:12px;padding:3px 0;border-bottom:1px dashed rgba(0,0,0,.08);display:flex;gap:8px;flex-wrap:wrap; }
+.appt-notice-item:last-child { border-bottom:none; }
+.appt-dept-2f { display:inline-block;background:#FEF3C7;color:#B45309;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px; }
+.appt-dept-4f { display:inline-block;background:#EDE9FE;color:#7C3AED;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px; }
+.appt-section-title { font-weight:700;font-size:13px;color:var(--color-text-secondary);margin:14px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--color-border);display:flex;align-items:center;gap:6px; }
+.appt-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;margin-bottom:16px; }
+.appt-card { background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px 16px;display:flex;flex-direction:column;gap:6px; }
+.appt-card.status-已出席 { border-left:3px solid var(--color-green); }
+.appt-card.status-未到    { border-left:3px solid var(--color-red);opacity:.7; }
+.appt-card.status-已轉新單 { border-left:3px solid #7C3AED; }
+.appt-card.status-已確認  { border-left:3px solid var(--color-accent); }
+.appt-card.status-待確認  { border-left:3px solid var(--color-amber); }
+.appt-card-hdr { display:flex;justify-content:space-between;align-items:flex-start;gap:8px; }
+.appt-names { font-weight:700;font-size:14px; }
+.appt-child { font-size:12px;color:var(--color-text-secondary); }
+.appt-time { font-size:13px;font-weight:600;color:var(--color-accent); }
+.appt-meta { font-size:11px;color:var(--color-text-tertiary);display:flex;gap:6px;flex-wrap:wrap; }
+.appt-status-badge { font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px; }
+.appt-status-待確認  { background:#FEF3C7;color:#B45309; }
+.appt-status-已確認  { background:#DBEAFE;color:#1D4ED8; }
+.appt-status-已出席  { background:var(--color-green-bg);color:var(--color-green); }
+.appt-status-未到    { background:#FEE2E2;color:var(--color-red); }
+.appt-status-已轉新單 { background:#EDE9FE;color:#7C3AED; }
+.appt-actions { display:flex;gap:6px;flex-wrap:wrap;margin-top:4px; }
+.appt-btn { font-size:11px;padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--color-border);background:var(--color-bg);cursor:pointer;color:var(--color-text-secondary); }
+.appt-btn:hover { background:var(--color-border); }
+.appt-btn.blue  { border-color:#3B82F6;color:#3B82F6; }
+.appt-btn.green { border-color:var(--color-green);color:var(--color-green); }
+.appt-btn.red   { border-color:var(--color-red);color:var(--color-red); }
+.appt-btn.purple { border-color:#7C3AED;color:#7C3AED; }
+/* 新增表單 modal */
+.appt-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:center;justify-content:center; }
+.appt-modal-overlay.open { display:flex; }
+.appt-modal { background:var(--color-surface);border-radius:var(--radius-lg);padding:24px;width:min(520px,95vw);max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg); }
+.appt-modal-title { font-size:16px;font-weight:700;margin-bottom:16px; }
+.appt-form-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+.appt-form-grid .full { grid-column:1/-1; }
+.appt-form-group label { display:block;font-size:12px;font-weight:600;color:var(--color-text-secondary);margin-bottom:4px; }
+.appt-form-group input,.appt-form-group select,.appt-form-group textarea { width:100%;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:6px 10px;font-size:13px;background:var(--color-bg);color:var(--color-text-primary);box-sizing:border-box; }
+.appt-form-group input:focus,.appt-form-group select:focus { outline:none;border-color:var(--color-accent); }
+.appt-dept-tabs { display:flex;gap:8px;margin-bottom:14px; }
+.appt-dept-tab { flex:1;padding:8px;border:2px solid var(--color-border);border-radius:var(--radius-sm);text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:var(--color-text-secondary);background:var(--color-bg); }
+.appt-dept-tab.active-2f { border-color:#B45309;color:#B45309;background:#FEF3C7; }
+.appt-dept-tab.active-4f { border-color:#7C3AED;color:#7C3AED;background:#EDE9FE; }
 .staff-name-cell { display: flex; flex-direction: column; gap: 3px; }
 .staff-progress { width: 100%; height: 3px; background: var(--color-border); border-radius: 2px; overflow: hidden; }
 .staff-progress-bar { height: 100%; border-radius: 2px; }
@@ -425,6 +516,8 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
   <div class="nav-tab" onclick="switchTab('weekly',this)">業務週報</div>
   <div class="nav-tab" onclick="switchTab('consumption',this)">營收登記</div>
   <div class="nav-tab" onclick="switchTab('annual',this)">年度業績</div>
+  <div class="nav-tab" onclick="switchTab('leads',this)">追單管理</div>
+  <div class="nav-tab" onclick="switchTab('appt',this)">體驗預約</div>
 </div>
 
 <!-- Tab Contents -->
@@ -433,6 +526,8 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 <div id="tab-weekly" class="tab-content"></div>
 <div id="tab-consumption" class="tab-content"></div>
 <div id="tab-annual" class="tab-content"></div>
+<div id="tab-leads" class="tab-content"></div>
+<div id="tab-appt" class="tab-content"></div>
 
 <!-- Staff Management Modal -->
 <div class="modal-overlay" id="staff-modal">
@@ -540,6 +635,81 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- 體驗預約 Modal -->
+<div class="appt-modal-overlay" id="appt-modal">
+  <div class="appt-modal">
+    <div class="appt-modal-title">📋 新增體驗預約</div>
+
+    <!-- 貼上解析區 -->
+    <div id="appt-paste-section" style="margin-bottom:14px">
+      <label style="font-size:12px;font-weight:600;color:var(--color-text-secondary);display:block;margin-bottom:4px">
+        📋 貼上原始資料（LINE訊息、表單回覆等任何格式）
+      </label>
+      <textarea id="appt-paste-input" rows="4"
+        style="width:100%;border:1px dashed var(--color-accent);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;background:#F0F9FF;color:var(--color-text-primary);resize:vertical;box-sizing:border-box"
+        placeholder="直接貼上，例如：&#10;家長姓名：江曼荷&#10;聯絡電話：0905730068&#10;寶貝姓名：彭相翕&#10;想安排體驗：6/4星期四17:00黏土課"></textarea>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <button class="btn-primary" id="appt-parse-btn" onclick="parseApptText()" style="font-size:12px;padding:5px 14px">
+          ✨ 自動解析
+        </button>
+        <span id="appt-parse-status" style="font-size:12px;color:var(--color-text-tertiary)"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin:10px 0 4px">
+        <div style="flex:1;height:1px;background:var(--color-border)"></div>
+        <span style="font-size:11px;color:var(--color-text-tertiary)">或手動填寫</span>
+        <div style="flex:1;height:1px;background:var(--color-border)"></div>
+      </div>
+    </div>
+
+    <div class="appt-dept-tabs">
+      <div class="appt-dept-tab active-2f" id="appt-tab-2f" onclick="selectApptDept('2F')">🎨 2F 兒童體驗<br><small style="font-weight:400">繪畫/黏土/積木/音樂</small></div>
+      <div class="appt-dept-tab" id="appt-tab-4f" onclick="selectApptDept('4F')">🖌️ 4F 成人體驗<br><small style="font-weight:400">選圖繪畫/多媒材</small></div>
+    </div>
+    <div class="appt-form-grid">
+      <div class="appt-form-group">
+        <label>家長姓名 *</label>
+        <input id="appt-parentName" type="text" placeholder="江曼荷">
+      </div>
+      <div class="appt-form-group">
+        <label>聯絡電話 *</label>
+        <input id="appt-phone" type="tel" placeholder="0905730068">
+      </div>
+      <div class="appt-form-group" id="appt-child-group">
+        <label>寶貝姓名</label>
+        <input id="appt-childName" type="text" placeholder="彭相翕">
+      </div>
+      <div class="appt-form-group" id="appt-birth-group">
+        <label>寶貝出生年月日</label>
+        <input id="appt-childBirth" type="text" placeholder="3/14">
+      </div>
+      <div class="appt-form-group">
+        <label>科目 / 課程</label>
+        <input id="appt-subject" type="text" placeholder="黏土課">
+      </div>
+      <div class="appt-form-group">
+        <label>接待業務 <span style="font-weight:400;color:var(--color-text-tertiary)">（可留空，稍後分配）</span></label>
+        <select id="appt-staff"></select>
+      </div>
+      <div class="appt-form-group">
+        <label>預約日期 *</label>
+        <input id="appt-date" type="date">
+      </div>
+      <div class="appt-form-group">
+        <label>預約時段 *</label>
+        <input id="appt-time" type="time" placeholder="17:00">
+      </div>
+      <div class="appt-form-group full">
+        <label>備註</label>
+        <textarea id="appt-note" rows="2" placeholder="其他說明..."></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn-secondary" onclick="closeApptModal()">取消</button>
+      <button class="btn-primary" onclick="saveAppt()">✓ 儲存預約</button>
+    </div>
+  </div>
+</div>
 
 <!-- Edit Record Modal -->
 <div class="edit-modal-overlay hidden" id="edit-modal-overlay" onclick="if(event.target===this)closeEditModal()">
@@ -759,6 +929,12 @@ let state = {
   entryDeptFilter: '所有',
   salary4fDaily: {} // 從 salaryData/daily 截取的 4F 每日資料
 };
+// 週目標：{ "flagship:6:6/2-6/8": { 布丁: 80000, ... } }
+let weekTargets = JSON.parse(localStorage.getItem('weekTargets') || '{}');
+// 追單清單（leads）：{ id: { store,staff,customer,dept,estimateAmt,status,note,createdWeek,createdMonth,updatedAt,closedAmt } }
+let leads = JSON.parse(localStorage.getItem('leads') || '{}');
+// 體驗預約：{ id: { store,dept,parentName,phone,childName,childBirth,subject,appointDate,appointTime,staff,status,note,leadId,createdAt } }
+let appointments = JSON.parse(localStorage.getItem('appointments') || '{}');
 
 let gsConfig = JSON.parse(localStorage.getItem('gsConfig') || 'null') || { url: '', name: '業績資料' };
 // Firebase 設定（已內建，開啟即自動連線）
@@ -914,6 +1090,9 @@ function save() {
   try {
     localStorage.setItem('salesRecords', JSON.stringify(state.records));
     localStorage.setItem('monthTargets', JSON.stringify(monthTargets));
+  localStorage.setItem('weekTargets', JSON.stringify(weekTargets));
+  localStorage.setItem('leads', JSON.stringify(leads));
+  localStorage.setItem('appointments', JSON.stringify(appointments));
     localStorage.setItem('invPrefixes', JSON.stringify(state.invPrefixes));
     localStorage.setItem('monthStaff', JSON.stringify(monthStaff));
     localStorage.setItem('manual2fRevenue', JSON.stringify(state.manual2fRevenue));
@@ -962,6 +1141,9 @@ async function syncToFirebase(silent=false) {
     await fbDb.ref('salesData').set({
       records: state.records,
       targets: monthTargets,
+      weekTargets: weekTargets,
+      leads: leads,
+      appointments: appointments,
       manualStats: state.manualStats,
       monthStaff: monthStaff,
       dailyRevenue: state.dailyRevenue,
@@ -989,6 +1171,9 @@ async function loadFromSheets(silent=false) {
     if (!data) { showToast('Firebase 尚無資料，請先上傳一次', true); return; }
     if (data.records) state.records = data.records;
     if (data.targets) Object.assign(monthTargets, data.targets);
+    if (data.weekTargets) Object.assign(weekTargets, data.weekTargets);
+    if (data.leads) Object.assign(leads, data.leads);
+    if (data.appointments) Object.assign(appointments, data.appointments);
     if (data.manualStats) Object.assign(state.manualStats, data.manualStats);
     if (data.monthStaff) Object.assign(monthStaff, data.monthStaff);
     if (data.settings && data.settings.invPrefixes) Object.assign(state.invPrefixes, data.settings.invPrefixes);
@@ -1680,6 +1865,60 @@ function show2fDetail() {
 // ══════════════════════════════════════
 //  RENDER: WEEKLY + 月目標（合併）
 // ══════════════════════════════════════
+// ── 週目標 helpers ──
+function getWeekTargetKey(store, month, week) { return `${store}:${month}:${week}`; }
+function getWeekTarget(staff, week) {
+  const key = getWeekTargetKey(state.store, state.month, week);
+  return (weekTargets[key] || {})[staff] || 0;
+}
+function setWeekTarget(staff, week, val) {
+  const key = getWeekTargetKey(state.store, state.month, week);
+  if (!weekTargets[key]) weekTargets[key] = {};
+  weekTargets[key][staff] = Number(val) || 0;
+  save(); syncToFirebase(true);
+}
+
+// ── 追單 leads helpers ──
+function genLeadId() { return 'lead_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
+function saveLead(id, data) {
+  leads[id] = { ...leads[id], ...data, updatedAt: Date.now() };
+  save(); syncToFirebase(true);
+}
+function deleteLead(id) {
+  delete leads[id];
+  save(); syncToFirebase(true);
+  renderLeads(); renderWeekly();
+}
+function addLead(staff) {
+  const customer = prompt('客戶名稱：');
+  if (!customer) return;
+  const estimateAmt = Number(prompt('預估金額（元）：') || 0);
+  const dept = prompt('部門（2F / 4F / 國圖）：') || (state.store==='flagship'?'4F':'國圖');
+  const note = prompt('備註（可空白）：') || '';
+  const weeks = getWeeks(state.month);
+  const currentWeek = weeks[state.weekIdx] || weeks[0];
+  const id = genLeadId();
+  saveLead(id, {
+    store: state.store, staff, customer, estimateAmt, dept,
+    status: '追蹤中', note,
+    createdWeek: currentWeek, createdMonth: state.month, closedAmt: 0
+  });
+  renderLeads(); renderWeekly();
+}
+function updateLeadStatus(id, status) {
+  let closedAmt = leads[id]?.closedAmt || 0;
+  if (status === '已成交') {
+    const input = prompt('實際成交金額：', closedAmt || '');
+    if (input === null) return;
+    closedAmt = Number(input) || 0;
+  }
+  saveLead(id, { status, closedAmt });
+  renderLeads(); renderWeekly();
+}
+function updateLeadNote(id, val) {
+  saveLead(id, { note: val });
+}
+
 function toggleWeeklyDetail(id) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -1874,6 +2113,63 @@ function renderWeekly() {
   const storeRate = storeTarget > 0 ? storeTotal / storeTarget : null;
   const sBarW = Math.min(100,(storeRate||0)*100);
 
+  // ── 週目標卡片 ──
+  let weekTargetCards = '';
+  for (const staff of staffList) {
+    const wTgt = getWeekTarget(staff, week);
+    const wActual = filterRecs({ month: state.month, week, staff }).reduce((s,r)=>s+r.amount,0);
+    const wRate = wTgt > 0 ? wActual / wTgt : null;
+    const wBarW = Math.min(100,(wRate||0)*100);
+    const wDiff = wActual - wTgt;
+    const wDiffHtml = wTgt > 0
+      ? wDiff >= 0
+        ? `<span style="color:var(--color-green);font-size:11px">超出 +$${fmt(wDiff)} 🎉</span>`
+        : `<span style="color:var(--color-red);font-size:11px">尚差 $${fmt(-wDiff)}</span>`
+      : '<span style="font-size:11px;color:var(--color-text-tertiary)">尚未設定週目標</span>';
+
+    // 該業務「追蹤中」的 leads
+    const staffLeads = Object.entries(leads).filter(([,l]) =>
+      l.staff === staff && l.store === state.store && l.status === '追蹤中'
+    );
+    const leadsHtml = staffLeads.length > 0
+      ? staffLeads.map(([id,l]) => `
+          <div class="lead-mini-row">
+            <span class="lead-mini-cust">${l.customer}</span>
+            <span class="lead-mini-dept" style="font-size:10px;color:var(--color-text-tertiary)">${l.dept}</span>
+            <span class="lead-mini-amt">預估 $${fmt(l.estimateAmt)}</span>
+            <span class="lead-mini-note">${l.note||''}</span>
+          </div>`).join('')
+      : `<div style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px">無追蹤中的案件</div>`;
+
+    weekTargetCards += `
+      <div class="week-target-card">
+        <div class="week-target-hdr">
+          <span class="week-target-name">${staff}</span>
+          ${rateBadge(wRate)}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px">
+          <span style="font-size:12px;color:var(--color-text-secondary);white-space:nowrap">週目標</span>
+          <input type="number" class="week-target-input" value="${wTgt||''}" placeholder="輸入金額"
+            onchange="setWeekTarget('${staff}','${week}',this.value)"
+            onblur="renderWeekly()">
+        </div>
+        <div class="month-bar-wrap" style="margin:4px 0">
+          <div class="month-bar" style="width:${wBarW}%;background:${rateBarColor(wRate)}"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:6px">
+          <span>實際 <strong>$${fmt(wActual)}</strong></span>
+          <span>${wDiffHtml}</span>
+        </div>
+        <div class="lead-mini-section">
+          <div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);margin-bottom:4px;display:flex;justify-content:space-between">
+            <span>🎯 追蹤中案件</span>
+            <span style="cursor:pointer;color:var(--color-accent);font-weight:400" onclick="addLead('${staff}')">+ 新增</span>
+          </div>
+          ${leadsHtml}
+        </div>
+      </div>`;
+  }
+
   // ── 待追款 (pending/未入帳) section ──
   const pendingRecs = state.records.filter(r => r.pending && r.month === state.month && !r.voided);
   const pendingTotal = pendingRecs.reduce((s,r)=>s+r.amount,0);
@@ -1929,6 +2225,8 @@ function renderWeekly() {
       </div>
       <div class="month-grid">${staffCards}</div>
     </div>
+    <div class="section-title" style="margin-top:8px"><span>📊</span> ${week} 個人週目標進度</div>
+    <div class="week-target-grid">${weekTargetCards}</div>
     <div class="section-title" style="margin-top:4px"><span style="style="color:#BE185D"">⏰</span> 待追款項（未入帳）${pendingRecs.length>0?`<span class="badge-pending" style="font-size:12px;padding:2px 8px;margin-left:6px">${pendingRecs.length} 筆</span>`:''}</div>
     <div class="pending-section">${pendingRows}</div>`;
 }
@@ -2725,6 +3023,8 @@ function switchTab(name, el) {
   else if (name==='annual') renderAnnual();
   else if (name==='entry') renderEntry();
   else if (name==='consumption') renderConsumption();
+  else if (name==='leads') renderLeads();
+  else if (name==='appt') renderAppt();
 }
 function changeMonth(m) {
   state.month = parseInt(m);
@@ -3193,6 +3493,526 @@ function renderConsumption() {
     ${flagship2fSection}
     ${flagship4fSection}
     ${guotuSection}`;
+}
+
+
+// ══════════════════════════════════════
+//  RENDER: LEADS 追單管理
+// ══════════════════════════════════════
+let leadsFilter = { staff: '全部', status: '追蹤中', month: 0 };
+
+function renderLeads() {
+  const staffList = getStaff();
+  const allStatuses = ['追蹤中','已成交','已放棄'];
+
+  // ── toolbar ──
+  const staffOpts = ['全部',...staffList].map(s =>
+    `<option value="${s}" ${leadsFilter.staff===s?'selected':''}>${s}</option>`).join('');
+  const statusOpts = ['全部',...allStatuses].map(s =>
+    `<option value="${s}" ${leadsFilter.status===s?'selected':''}>${s}</option>`).join('');
+  const monthOpts = [0,1,2,3,4,5,6,7,8,9,10,11,12].map(m =>
+    `<option value="${m}" ${leadsFilter.month===m?'selected':''}>${m===0?'所有月份':m+'月'}</option>`).join('');
+
+  // ── filter leads ──
+  let filtered = Object.entries(leads).filter(([,l]) => {
+    if (l.store !== state.store) return false;
+    if (leadsFilter.staff !== '全部' && l.staff !== leadsFilter.staff) return false;
+    if (leadsFilter.status !== '全部' && l.status !== leadsFilter.status) return false;
+    if (leadsFilter.month > 0 && l.createdMonth !== leadsFilter.month) return false;
+    return true;
+  });
+  // 排序：追蹤中優先，再依更新時間
+  filtered.sort((a,b) => {
+    const order = {'追蹤中':0,'已成交':1,'已放棄':2};
+    if (order[a[1].status] !== order[b[1].status]) return order[a[1].status]-order[b[1].status];
+    return (b[1].updatedAt||0) - (a[1].updatedAt||0);
+  });
+
+  // ── summary KPI ──
+  const tracking = Object.values(leads).filter(l=>l.store===state.store&&l.status==='追蹤中');
+  const closed   = Object.values(leads).filter(l=>l.store===state.store&&l.status==='已成交');
+  const totalEst = tracking.reduce((s,l)=>s+(l.estimateAmt||0),0);
+  const totalClosed = closed.reduce((s,l)=>s+(l.closedAmt||l.estimateAmt||0),0);
+
+  // ── card builder helper ──
+  function buildLeadCard(id, l) {
+    const statusClass = l.status==='已成交'?'status-成交':l.status==='已放棄'?'status-放棄':'status-追蹤';
+    const wksAgo = l.createdWeek ? `建立於 ${l.createdMonth}月 ${l.createdWeek}` : '';
+    const closedLine = l.status==='已成交'
+      ? `<div style="font-size:12px;color:var(--color-green);font-weight:600;margin-bottom:4px">✓ 成交 $${fmt(l.closedAmt||0)}</div>`
+      : '';
+    return `<div class="lead-card ${statusClass}">
+      <div class="lead-card-hdr">
+        <div>
+          <div class="lead-card-name">${l.customer}</div>
+          <div class="lead-card-meta">
+            <span>${l.dept}</span>${wksAgo?`<span>${wksAgo}</span>`:''}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <span class="lead-status-badge lead-status-${l.status}">${l.status}</span>
+          <div class="lead-card-amt" style="margin-top:4px">預估 $${fmt(l.estimateAmt||0)}</div>
+        </div>
+      </div>
+      ${closedLine}
+      <div class="lead-card-note">
+        <textarea placeholder="備註 / 跟進記錄..."
+          onblur="updateLeadNote('${id}',this.value)">${l.note||''}</textarea>
+      </div>
+      <div class="lead-card-actions">
+        ${l.status!=='已成交'?`<button class="lead-btn green" onclick="updateLeadStatus('${id}','已成交')">✓ 成交</button>`:''}
+        ${l.status==='追蹤中'?`<button class="lead-btn" onclick="updateLeadStatus('${id}','已放棄')">✗ 放棄</button>`:''}
+        ${l.status!=='追蹤中'?`<button class="lead-btn" onclick="updateLeadStatus('${id}','追蹤中')">↩ 重新追蹤</button>`:''}
+        <button class="lead-btn red" onclick="if(confirm('確定刪除此追單？'))deleteLead('${id}')">刪除</button>
+      </div>
+    </div>`;
+  }
+
+  // ── 分業務分組 ──
+  // 決定要顯示哪些業務（若有篩選就只顯示該業務，否則全部）
+  const displayStaffs = leadsFilter.staff === '全部'
+    ? staffList
+    : staffList.filter(s => s === leadsFilter.staff);
+
+  let groupedHtml = '';
+  let totalFiltered = 0;
+
+  for (const staff of displayStaffs) {
+    const staffItems = filtered.filter(([,l]) => l.staff === staff);
+    totalFiltered += staffItems.length;
+
+    // 業務小計 KPI
+    const sTracking = staffItems.filter(([,l])=>l.status==='追蹤中').length;
+    const sClosed   = staffItems.filter(([,l])=>l.status==='已成交').length;
+    const sEst      = staffItems.filter(([,l])=>l.status==='追蹤中').reduce((s,[,l])=>s+(l.estimateAmt||0),0);
+    const sCRate    = (sTracking+sClosed) > 0 ? (sClosed/(sTracking+sClosed)*100).toFixed(0)+'%' : '—';
+
+    const staffCards = staffItems.length > 0
+      ? staffItems.map(([id,l]) => buildLeadCard(id,l)).join('')
+      : `<div style="font-size:12px;color:var(--color-text-tertiary);padding:12px 0">無符合條件的追單</div>`;
+
+    groupedHtml += `
+      <div class="leads-staff-group">
+        <div class="leads-staff-hdr">
+          <span class="leads-staff-name">👤 ${staff}</span>
+          <div class="leads-staff-stats">
+            <span>追蹤中 <strong>${sTracking}</strong></span>
+            <span>已成交 <strong style="color:var(--color-green)">${sClosed}</strong></span>
+            ${sEst>0?`<span>預估 <strong>$${fmt(sEst)}</strong></span>`:''}
+            <span>成交率 <strong>${sCRate}</strong></span>
+            <button class="lead-btn" style="font-size:11px;padding:2px 8px" onclick="addLead('${staff}')">＋ 新增</button>
+          </div>
+        </div>
+        <div class="leads-grid">${staffCards}</div>
+      </div>`;
+  }
+
+  if (totalFiltered === 0) {
+    groupedHtml = `<div class="leads-empty">沒有符合條件的追單記錄<br><span style="font-size:12px">點右上角「＋ 新增追單」開始記錄</span></div>`;
+  }
+
+  document.getElementById('tab-leads').innerHTML = `
+    <div class="kpi-grid" style="margin-bottom:14px">
+      <div class="kpi-card">
+        <div class="kpi-label">追蹤中</div>
+        <div class="kpi-value">${tracking.length} 件</div>
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">預估 $${fmt(totalEst)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">已成交</div>
+        <div class="kpi-value" style="color:var(--color-green)">${closed.length} 件</div>
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">金額 $${fmt(totalClosed)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">成交率</div>
+        <div class="kpi-value" style="color:${rateColor(closed.length/(tracking.length+closed.length)||null)}">
+          ${tracking.length+closed.length>0?((closed.length/(tracking.length+closed.length))*100).toFixed(1)+'%':'—'}
+        </div>
+      </div>
+    </div>
+    <div class="leads-toolbar">
+      <select onchange="leadsFilter.staff=this.value;renderLeads()">${staffOpts}</select>
+      <select onchange="leadsFilter.status=this.value;renderLeads()">${statusOpts}</select>
+      <select onchange="leadsFilter.month=Number(this.value);renderLeads()">${monthOpts}</select>
+      <button class="btn-primary" style="margin-left:auto" onclick="addLeadFromPage()">＋ 新增追單</button>
+    </div>
+    ${groupedHtml}`;
+}
+
+
+// ══════════════════════════════════════
+//  RENDER: 體驗預約
+// ══════════════════════════════════════
+let apptDeptFilter = '全部'; // '全部'/'2F'/'4F'
+let apptStatusFilter = '全部';
+let apptModalDept = '2F'; // 目前 modal 選的 dept
+
+function genApptId() { return 'appt_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
+
+async function parseApptText() {
+  const raw = document.getElementById('appt-paste-input').value.trim();
+  if (!raw) { showToast('請先貼上資料', true); return; }
+
+  const btn = document.getElementById('appt-parse-btn');
+  const status = document.getElementById('appt-parse-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ 解析中...';
+  status.textContent = '';
+
+  const today = new Date().toISOString().slice(0,10);
+  const staffList = getStaff().join('、');
+  const prompt = `你是一個資料解析助手。請從以下原始文字中提取體驗預約資訊，回傳 JSON 格式（只回傳 JSON，不要任何說明文字）。
+
+今天日期：${today}（年份為 2026，若文字中只有月/日則補上 2026）
+
+請提取以下欄位：
+- dept: "2F"（兒童課程：黏土/繪畫/積木/音樂律動）或 "4F"（成人課程：選圖繪畫/多媒材），若無法判斷則 "2F"
+- parentName: 家長或本人姓名（字串）
+- phone: 電話號碼（字串，去除空格/符號）
+- childName: 小朋友姓名（字串，若為成人體驗則空字串）
+- childBirth: 出生年月日（字串，保留原格式）
+- subject: 課程/科目名稱（字串）
+- appointDate: 預約日期（YYYY-MM-DD 格式，若有星期幾提示請推算正確日期）
+- appointTime: 預約時間（HH:MM 24小時格式）
+- note: 其他備註（字串）
+
+原始文字：
+${raw}
+
+回傳格式範例：
+{"dept":"2F","parentName":"江曼荷","phone":"0905730068","childName":"彭相翕","childBirth":"3/14","subject":"黏土課","appointDate":"2026-06-04","appointTime":"17:00","note":""}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content || []).map(c => c.text || '').join('').trim();
+
+    let parsed;
+    try {
+      const clean = text.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(clean);
+    } catch(e) {
+      throw new Error('無法解析 AI 回傳格式');
+    }
+
+    // 填入表單
+    selectApptDept(parsed.dept || '2F');
+    document.getElementById('appt-parentName').value = parsed.parentName || '';
+    document.getElementById('appt-phone').value      = parsed.phone || '';
+    document.getElementById('appt-childName').value  = parsed.childName || '';
+    document.getElementById('appt-childBirth').value = parsed.childBirth || '';
+    document.getElementById('appt-subject').value    = parsed.subject || '';
+    document.getElementById('appt-date').value       = parsed.appointDate || '';
+    document.getElementById('appt-time').value       = parsed.appointTime || '';
+    document.getElementById('appt-note').value       = parsed.note || '';
+
+    status.textContent = '✓ 解析完成，請確認欄位後儲存';
+    status.style.color = 'var(--color-green)';
+    // 捲動到表單區
+    document.getElementById('appt-parentName').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  } catch(err) {
+    status.textContent = '解析失敗：' + err.message;
+    status.style.color = 'var(--color-red)';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ 自動解析';
+  }
+}
+
+function openApptModal() {
+  const staffList = getStaff();
+  const sel = document.getElementById('appt-staff');
+  sel.innerHTML = `<option value="">── 待分配 ──</option>` + staffList.map(s=>`<option value="${s}">${s}</option>`).join('');
+  // 預設今天日期
+  const today = new Date();
+  document.getElementById('appt-date').value = today.toISOString().slice(0,10);
+  document.getElementById('appt-time').value = '';
+  document.getElementById('appt-parentName').value = '';
+  document.getElementById('appt-phone').value = '';
+  document.getElementById('appt-childName').value = '';
+  document.getElementById('appt-childBirth').value = '';
+  document.getElementById('appt-subject').value = '';
+  document.getElementById('appt-note').value = '';
+  selectApptDept('2F');
+  document.getElementById('appt-paste-input').value = '';
+  document.getElementById('appt-parse-status').textContent = '';
+  document.getElementById('appt-modal').classList.add('open');
+}
+function closeApptModal() { document.getElementById('appt-modal').classList.remove('open'); }
+function selectApptDept(dept) {
+  apptModalDept = dept;
+  document.getElementById('appt-tab-2f').className = 'appt-dept-tab' + (dept==='2F'?' active-2f':'');
+  document.getElementById('appt-tab-4f').className = 'appt-dept-tab' + (dept==='4F'?' active-4f':'');
+  // 2F 顯示兒童欄位；4F 隱藏
+  const show2f = dept === '2F';
+  document.getElementById('appt-child-group').style.display = show2f ? '' : 'none';
+  document.getElementById('appt-birth-group').style.display = show2f ? '' : 'none';
+  document.getElementById('appt-subject').placeholder = show2f ? '黏土課 / 繪畫 / 積木 / 音樂律動' : '選圖繪畫 / 多媒材';
+}
+function saveAppt() {
+  const parentName = document.getElementById('appt-parentName').value.trim();
+  const phone      = document.getElementById('appt-phone').value.trim();
+  const date       = document.getElementById('appt-date').value;
+  const time       = document.getElementById('appt-time').value;
+  const staff      = document.getElementById('appt-staff').value;
+  if (!parentName || !phone || !date) { showToast('請填寫必填欄位（家長姓名、電話、日期）', true); return; }
+  const id = genApptId();
+  appointments[id] = {
+    store: state.store,
+    dept: apptModalDept,
+    parentName,
+    phone,
+    childName:  apptModalDept==='2F' ? document.getElementById('appt-childName').value.trim() : '',
+    childBirth: apptModalDept==='2F' ? document.getElementById('appt-childBirth').value.trim() : '',
+    subject:    document.getElementById('appt-subject').value.trim(),
+    appointDate: date,
+    appointTime: time,
+    staff: staff || '',
+    status: '待確認',
+    note: document.getElementById('appt-note').value.trim(),
+    leadId: '',
+    createdAt: Date.now()
+  };
+  save(); syncToFirebase(true);
+  closeApptModal();
+  showToast('✓ 已新增體驗預約');
+  renderAppt();
+}
+
+function updateApptStatus(id, status) {
+  if (!appointments[id]) return;
+  appointments[id].status = status;
+  appointments[id].updatedAt = Date.now();
+
+  // 已出席 → 自動建立追單 lead（若尚未建立）
+  if (status === '已出席' && !appointments[id].leadId) {
+    const a = appointments[id];
+    const customer = a.dept==='2F'
+      ? (a.parentName + (a.childName ? '／'+a.childName : ''))
+      : a.parentName;
+    const lid = genLeadId();
+    const weeks = getWeeks(state.month);
+    const today = new Date();
+    const currentWeek = weeks[state.weekIdx] || weeks[0];
+    saveLead(lid, {
+      store: a.store, staff: a.staff, customer, dept: a.dept,
+      estimateAmt: 0, status: '追蹤中',
+      note: `體驗生 ${a.subject||''} ${a.appointDate} ${a.appointTime}\n${a.phone}`,
+      createdWeek: currentWeek, createdMonth: state.month, closedAmt: 0
+    });
+    appointments[id].leadId = lid;
+    showToast('✓ 已標記出席，並自動建立追單');
+  }
+  save(); syncToFirebase(true);
+  renderAppt();
+}
+
+function assignApptStaff(id, staff) {
+  if (!appointments[id]) return;
+  appointments[id].staff = staff;
+  appointments[id].updatedAt = Date.now();
+  save(); syncToFirebase(true);
+  renderAppt();
+  if (staff) showToast(`✓ 已將預約分配給 ${staff}`);
+}
+
+function deleteAppt(id) {
+  if (!confirm('確定刪除此預約？')) return;
+  delete appointments[id];
+  save(); syncToFirebase(true);
+  renderAppt();
+}
+
+function apptNoticeBlock(title, cls, items) {
+  if (items.length === 0) return '';
+  const rows = items.map(([,a]) => {
+    const deptBadge = a.dept==='2F'
+      ? '<span class="appt-dept-2f">2F</span>'
+      : '<span class="appt-dept-4f">4F</span>';
+    const who = a.dept==='2F'
+      ? `${a.parentName}／${a.childName||'—'}`
+      : a.parentName;
+    return `<div class="appt-notice-item">
+      ${deptBadge}
+      <span>${a.appointTime||'—'}</span>
+      <strong>${who}</strong>
+      <span>${a.subject||'—'}</span>
+      <span style="color:${a.staff?'#6B7280':'var(--color-amber);font-weight:600'}">${a.staff||'待分配'}</span>
+    </div>`;
+  }).join('');
+  return `<div class="appt-notice-box ${cls}">
+    <div class="appt-notice-title">${title}（${items.length} 位）</div>
+    ${rows}
+  </div>`;
+}
+
+function buildApptCard(id, a) {
+  const statusCls = 'status-'+a.status;
+  const deptBadge = a.dept==='2F'
+    ? '<span class="appt-dept-2f">2F 兒童</span>'
+    : '<span class="appt-dept-4f">4F 成人</span>';
+  const who = a.dept==='2F'
+    ? `${a.parentName}${a.childName?' / '+a.childName:''}`
+    : a.parentName;
+  const childInfo = a.dept==='2F' && a.childBirth
+    ? `<span>生日：${a.childBirth}</span>` : '';
+  const leadLink = a.leadId
+    ? `<span style="color:#7C3AED;font-size:10px">已追單</span>` : '';
+  return `<div class="appt-card ${statusCls}">
+    <div class="appt-card-hdr">
+      <div>
+        <div class="appt-names">${who} ${deptBadge}</div>
+        <div class="appt-child">${a.phone}</div>
+      </div>
+      <div style="text-align:right">
+        <span class="appt-status-badge appt-status-${a.status}">${a.status}</span>
+        ${leadLink}
+      </div>
+    </div>
+    <div class="appt-time">📅 ${a.appointDate} ${a.appointTime}</div>
+    <div class="appt-meta">
+      <span>科目：${a.subject||'—'}</span>
+      <span style="display:inline-flex;align-items:center;gap:4px">接待：${a.staff
+        ? `<strong>${a.staff}</strong>`
+        : `<span style="color:var(--color-amber);font-weight:600">待分配</span>`}
+        <select style="font-size:11px;padding:1px 4px;border:1px solid var(--color-border);border-radius:4px;background:var(--color-bg);cursor:pointer"
+          onchange="assignApptStaff('${id}',this.value)">
+          <option value="">分配業務</option>
+          ${getStaff().map(s=>`<option value="${s}" ${a.staff===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </span>
+      ${childInfo}
+    </div>
+    ${a.note?`<div style="font-size:12px;color:var(--color-text-secondary)">${a.note}</div>`:''}
+    <div class="appt-actions">
+      ${a.status==='待確認'?`<button class="appt-btn blue" onclick="updateApptStatus('${id}','已確認')">✓ 確認</button>`:''}
+      ${a.status!=='已出席'&&a.status!=='已轉新單'?`<button class="appt-btn green" onclick="updateApptStatus('${id}','已出席')">出席</button>`:''}
+      ${a.status!=='未到'&&a.status!=='已轉新單'?`<button class="appt-btn red" onclick="updateApptStatus('${id}','未到')">未到</button>`:''}
+      ${a.status==='已出席'&&!a.leadId?`<button class="appt-btn purple" onclick="updateApptStatus('${id}','已轉新單')">轉追單</button>`:''}
+      <button class="appt-btn" style="margin-left:auto" onclick="deleteAppt('${id}')">刪除</button>
+    </div>
+  </div>`;
+}
+
+function renderAppt() {
+  const todayStr = new Date().toISOString().slice(0,10);
+  const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+  const tomorrowDate = new Date(todayDate); tomorrowDate.setDate(tomorrowDate.getDate()+1);
+  const tomorrowStr = tomorrowDate.toISOString().slice(0,10);
+  const isFriday = new Date().getDay() === 5;
+  const satDate = new Date(todayDate); satDate.setDate(satDate.getDate()+(6-todayDate.getDay()));
+  const sunDate = new Date(satDate); sunDate.setDate(satDate.getDate()+1);
+  const satStr = satDate.toISOString().slice(0,10);
+  const sunStr = sunDate.toISOString().slice(0,10);
+
+  // All store appointments filtered
+  const storeAppts = Object.entries(appointments).filter(([,a]) => a.store === state.store);
+
+  // KPI
+  const total = storeAppts.length;
+  const thisMonth = storeAppts.filter(([,a]) => a.appointDate && a.appointDate.slice(0,7) === todayStr.slice(0,7));
+  const attended = storeAppts.filter(([,a])=>a.status==='已出席'||a.status==='已轉新單');
+  const converted = storeAppts.filter(([,a])=>a.status==='已轉新單');
+  const upcoming = storeAppts.filter(([,a])=>a.status==='待確認'||a.status==='已確認');
+  const convRate = attended.length > 0 ? (converted.length/attended.length*100).toFixed(0)+'%' : '—';
+
+  // Notice blocks
+  const todayAppts    = storeAppts.filter(([,a])=>a.appointDate===todayStr && (a.status==='待確認'||a.status==='已確認')).sort((a,b)=>a[1].appointTime>b[1].appointTime?1:-1);
+  const tomorrowAppts = storeAppts.filter(([,a])=>a.appointDate===tomorrowStr && (a.status==='待確認'||a.status==='已確認')).sort((a,b)=>a[1].appointTime>b[1].appointTime?1:-1);
+  const weekendAppts  = isFriday ? storeAppts.filter(([,a])=>(a.appointDate===satStr||a.appointDate===sunStr) && (a.status==='待確認'||a.status==='已確認')).sort((a,b)=>a[1].appointDate+a[1].appointTime>b[1].appointDate+b[1].appointTime?1:-1) : [];
+
+  const noticeHtml = [
+    apptNoticeBlock('📅 今日體驗名單', 'appt-notice-today', todayAppts),
+    apptNoticeBlock('🔔 明日體驗名單', 'appt-notice-tomorrow', tomorrowAppts),
+    isFriday ? apptNoticeBlock('🗓️ 本週末體驗名單（週六＋週日）', 'appt-notice-weekend', weekendAppts) : ''
+  ].filter(Boolean).join('');
+
+  // Filter + sort main list
+  const staffList = getStaff();
+  const statusOpts = ['全部','待確認','已確認','已出席','未到','已轉新單'].map(s=>
+    `<option value="${s}" ${apptStatusFilter===s?'selected':''}>${s}</option>`).join('');
+  const deptOpts = ['全部','2F','4F'].map(d=>
+    `<option value="${d}" ${apptDeptFilter===d?'selected':''}>${d}</option>`).join('');
+
+  let filtered = storeAppts.filter(([,a]) => {
+    if (apptDeptFilter !== '全部' && a.dept !== apptDeptFilter) return false;
+    if (apptStatusFilter !== '全部' && a.status !== apptStatusFilter) return false;
+    return true;
+  }).sort((a,b) => (a[1].appointDate+a[1].appointTime) > (b[1].appointDate+b[1].appointTime) ? 1 : -1);
+
+  // Group by dept, then by date
+  const depts = apptDeptFilter === '全部' ? ['2F','4F'] : [apptDeptFilter];
+  let sectionsHtml = '';
+  for (const dept of depts) {
+    const deptItems = filtered.filter(([,a])=>a.dept===dept);
+    if (deptItems.length === 0) continue;
+    const deptLabel = dept==='2F' ? '🎨 2F 兒童體驗' : '🖌️ 4F 成人體驗';
+    const badge = dept==='2F' ? 'appt-dept-2f' : 'appt-dept-4f';
+
+    // Group by date
+    const dateGroups = {};
+    for (const [id,a] of deptItems) {
+      if (!dateGroups[a.appointDate]) dateGroups[a.appointDate] = [];
+      dateGroups[a.appointDate].push([id,a]);
+    }
+    let deptHtml = '';
+    for (const date of Object.keys(dateGroups).sort()) {
+      const isToday = date===todayStr;
+      const isTomorrow = date===tomorrowStr;
+      const label = isToday ? ' 🔴 今日' : isTomorrow ? ' 🔔 明日' : '';
+      deptHtml += `<div style="font-size:12px;font-weight:600;color:var(--color-text-tertiary);margin:8px 0 6px">${date}${label}</div>`;
+      deptHtml += `<div class="appt-grid">${dateGroups[date].map(([id,a])=>buildApptCard(id,a)).join('')}</div>`;
+    }
+
+    sectionsHtml += `<div class="appt-section-title"><span class="${badge}">${dept}</span> ${deptLabel}</div>${deptHtml}`;
+  }
+
+  if (filtered.length === 0) {
+    sectionsHtml = `<div style="text-align:center;padding:40px;color:var(--color-text-tertiary);font-size:14px">沒有符合條件的預約記錄</div>`;
+  }
+
+  document.getElementById('tab-appt').innerHTML = `
+    <div class="kpi-grid" style="margin-bottom:12px">
+      <div class="kpi-card">
+        <div class="kpi-label">待出席（本月）</div>
+        <div class="kpi-value">${upcoming.length} 位</div>
+        ${storeAppts.filter(([,a])=>!a.staff).length>0
+          ?`<div style="font-size:11px;color:var(--color-amber);margin-top:2px;font-weight:600">⚠ ${storeAppts.filter(([,a])=>!a.staff).length} 筆待分配業務</div>`
+          :''}
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">已出席（本月）</div>
+        <div class="kpi-value" style="color:var(--color-green)">${thisMonth.filter(([,a])=>a.status==='已出席'||a.status==='已轉新單').length} 位</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">已轉新單</div>
+        <div class="kpi-value" style="color:#7C3AED">${converted.length} 件</div>
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">轉換率 ${convRate}</div>
+      </div>
+    </div>
+    ${noticeHtml}
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      <select style="font-size:13px;padding:5px 10px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text-primary)" onchange="apptDeptFilter=this.value;renderAppt()">${deptOpts}</select>
+      <select style="font-size:13px;padding:5px 10px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text-primary)" onchange="apptStatusFilter=this.value;renderAppt()">${statusOpts}</select>
+      <button class="btn-primary" style="margin-left:auto" onclick="openApptModal()">＋ 新增體驗預約</button>
+    </div>
+    ${sectionsHtml}`;
+}
+
+function addLeadFromPage() {
+  const staffList = getStaff();
+  const staffSel = staffList.length === 1 ? staffList[0] : prompt('業務姓名（' + staffList.join('／') + '）：');
+  if (!staffSel || !staffList.includes(staffSel)) { showToast('請輸入正確的業務姓名', true); return; }
+  addLead(staffSel);
 }
 
 </script>
