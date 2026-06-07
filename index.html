@@ -3529,7 +3529,7 @@ function renderLeads() {
   const allStatuses = ['追蹤中','已成交','已放棄'];
 
   // ── toolbar ──
-  const staffOpts = ['全部',...allStaffs].map(s =>
+  const staffOpts = allStaffsForOpts.map(s =>
     `<option value="${s}" ${leadsFilter.staff===s?'selected':''}>${s}</option>`).join('');
   const statusOpts = ['全部',...allStatuses].map(s =>
     `<option value="${s}" ${leadsFilter.status===s?'selected':''}>${s}</option>`).join('');
@@ -3592,30 +3592,32 @@ function renderLeads() {
   }
 
   // ── 分業務分組 ──
-  // 決定要顯示哪些業務（若有篩選就只顯示該業務，否則全部）
-  // 追單中若有「待分配」業務也要顯示
-  const hasUnassigned = Object.values(leads).some(l => l.store===state.store && l.staff==='待分配');
-  const allStaffs = hasUnassigned ? [...staffList, '待分配'] : staffList;
+  // 從 filtered 裡收集所有實際出現的 staff（不依賴 staffList，避免名字不吻合）
+  const staffsInFiltered = [...new Set(filtered.map(([,l]) => l.staff || '待分配'))];
+  // 優先依 staffList 排序，其他的補在後面
+  const orderedStaffs = [
+    ...staffList.filter(s => staffsInFiltered.includes(s)),
+    ...staffsInFiltered.filter(s => !staffList.includes(s))
+  ];
   const displayStaffs = leadsFilter.staff === '全部'
-    ? allStaffs
-    : allStaffs.filter(s => s === leadsFilter.staff);
+    ? orderedStaffs
+    : orderedStaffs.filter(s => s === leadsFilter.staff);
+
+  // staffOpts 也用 orderedStaffs（含實際有資料的業務）
+  const allStaffsForOpts = ['全部', ...new Set([...staffList, ...staffsInFiltered])];
 
   let groupedHtml = '';
   let totalFiltered = 0;
 
   for (const staff of displayStaffs) {
-    const staffItems = filtered.filter(([,l]) => l.staff === staff);
+    const staffItems = filtered.filter(([,l]) => (l.staff || '待分配') === staff);
+    if (staffItems.length === 0) continue; // 無資料的業務不顯示
     totalFiltered += staffItems.length;
 
-    // 業務小計 KPI
     const sTracking = staffItems.filter(([,l])=>l.status==='追蹤中').length;
     const sClosed   = staffItems.filter(([,l])=>l.status==='已成交').length;
     const sEst      = staffItems.filter(([,l])=>l.status==='追蹤中').reduce((s,[,l])=>s+(l.estimateAmt||0),0);
     const sCRate    = (sTracking+sClosed) > 0 ? (sClosed/(sTracking+sClosed)*100).toFixed(0)+'%' : '—';
-
-    const staffCards = staffItems.length > 0
-      ? staffItems.map(([id,l]) => buildLeadCard(id,l)).join('')
-      : `<div style="font-size:12px;color:var(--color-text-tertiary);padding:12px 0">無符合條件的追單</div>`;
 
     groupedHtml += `
       <div class="leads-staff-group">
@@ -3629,7 +3631,7 @@ function renderLeads() {
             <button class="lead-btn" style="font-size:11px;padding:2px 8px" onclick="addLead('${staff}')">＋ 新增</button>
           </div>
         </div>
-        <div class="leads-grid">${staffCards}</div>
+        <div class="leads-grid">${staffItems.map(([id,l]) => buildLeadCard(id,l)).join('')}</div>
       </div>`;
   }
 
