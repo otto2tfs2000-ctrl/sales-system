@@ -676,22 +676,8 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
       <div class="appt-dept-tab" id="appt-tab-4f" onclick="selectApptDept('4F')">🖌️ 4F 成人體驗<br><small style="font-weight:400">選圖繪畫/多媒材</small></div>
     </div>
     <div class="appt-form-grid">
-      <div class="appt-form-group">
-        <label>家長姓名 *</label>
-        <input id="appt-parentName" type="text" placeholder="江曼荷">
-      </div>
-      <div class="appt-form-group">
-        <label>聯絡電話 *</label>
-        <input id="appt-phone" type="tel" placeholder="0905730068">
-      </div>
-      <div class="appt-form-group" id="appt-child-group">
-        <label>寶貝姓名</label>
-        <input id="appt-childName" type="text" placeholder="彭相翕">
-      </div>
-      <div class="appt-form-group" id="appt-birth-group">
-        <label>寶貝出生年月日</label>
-        <input id="appt-childBirth" type="text" placeholder="3/14">
-      </div>
+
+
       <div class="appt-form-group">
         <label>科目 / 課程</label>
         <input id="appt-subject" type="text" placeholder="黏土課">
@@ -3881,13 +3867,9 @@ function parseApptText() {
 function fillApptForm(a) {
   if (!a) return;
   selectApptDept(a.dept || '2F');
-  document.getElementById('appt-parentName').value = a.parentName  || '';
-  document.getElementById('appt-phone').value      = a.phone       || '';
-  document.getElementById('appt-childName').value  = a.childName   || '';
-  document.getElementById('appt-childBirth').value = a.childBirth  || '';
-  document.getElementById('appt-subject').value    = a.subject     || '';
-  document.getElementById('appt-date').value       = a.appointDate || '';
-  document.getElementById('appt-time').value       = a.appointTime || '';
+  document.getElementById('appt-subject').value = a.subject     || '';
+  document.getElementById('appt-date').value    = a.appointDate || '';
+  document.getElementById('appt-time').value    = a.appointTime || '';
 }
 
 function openApptModal() {
@@ -3898,10 +3880,10 @@ function openApptModal() {
   const today = new Date();
   document.getElementById('appt-date').value = today.toISOString().slice(0,10);
   document.getElementById('appt-time').value = '';
-  document.getElementById('appt-parentName').value = '';
-  document.getElementById('appt-phone').value = '';
-  document.getElementById('appt-childName').value = '';
-  document.getElementById('appt-childBirth').value = '';
+
+
+
+
   document.getElementById('appt-subject').value = '';
   document.getElementById('appt-note').value = '';
   document.getElementById('appt-fee-unpaid').checked = true;
@@ -3916,27 +3898,21 @@ function selectApptDept(dept) {
   apptModalDept = dept;
   document.getElementById('appt-tab-2f').className = 'appt-dept-tab' + (dept==='2F'?' active-2f':'');
   document.getElementById('appt-tab-4f').className = 'appt-dept-tab' + (dept==='4F'?' active-4f':'');
-  // 2F 顯示兒童欄位；4F 隱藏
-  const show2f = dept === '2F';
-  document.getElementById('appt-child-group').style.display = show2f ? '' : 'none';
-  document.getElementById('appt-birth-group').style.display = show2f ? '' : 'none';
-  document.getElementById('appt-subject').placeholder = show2f ? '黏土課 / 繪畫 / 積木 / 音樂律動' : '選圖繪畫 / 多媒材';
+  document.getElementById('appt-subject').placeholder = dept === '2F' ? '黏土課 / 繪畫 / 積木 / 音樂律動' : '選圖繪畫 / 多媒材';
 }
 function saveAppt() {
-  const parentName = document.getElementById('appt-parentName').value.trim();
-  const phone      = document.getElementById('appt-phone').value.trim();
-  const date       = document.getElementById('appt-date').value;
-  const time       = document.getElementById('appt-time').value;
-  const staff      = document.getElementById('appt-staff').value;
-  if (!parentName || !phone || !date) { showToast('請填寫必填欄位（家長姓名、電話、日期）', true); return; }
+  const date  = document.getElementById('appt-date').value;
+  const time  = document.getElementById('appt-time').value;
+  const staff = document.getElementById('appt-staff').value;
+  if (!date) { showToast('請填寫預約日期', true); return; }
   const id = genApptId();
   appointments[id] = {
     store: state.store,
     dept: apptModalDept,
-    parentName,
-    phone,
-    childName:  apptModalDept==='2F' ? document.getElementById('appt-childName').value.trim() : '',
-    childBirth: apptModalDept==='2F' ? document.getElementById('appt-childBirth').value.trim() : '',
+    parentName: '',
+    phone: '',
+    childName: '',
+    childBirth: '',
     subject:    document.getElementById('appt-subject').value.trim(),
     appointDate: date,
     appointTime: time,
