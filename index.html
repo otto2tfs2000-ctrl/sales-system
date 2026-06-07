@@ -3672,102 +3672,167 @@ let apptModalDept = '2F'; // 目前 modal 選的 dept
 
 function genApptId() { return 'appt_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
 
-async function parseApptText() {
+// ── 解析核心工具 ──
+function extractField(text, keys) {
+  for (const key of keys) {
+    const re = new RegExp(key + '[\uff1a: \t]+([^\n]+)', 'i');
+    const m = text.match(re);
+    if (m) return m[1].trim();
+  }
+  return '';
+}
+
+function parseDate(str) {
+  // 支援 5/17、5-17、5月17日、2018.12.9（忽略年份）
+  const m = str.match(/(?:\d{4}[.\/\-])?(\d{1,2})[.\/\-月](\d{1,2})/);
+  if (!m) return '';
+  return '2026-' + String(m[1]).padStart(2,'0') + '-' + String(m[2]).padStart(2,'0');
+}
+
+function parseTime(str) {
+  // 下午X點、HH:MM、HH點MM（取第一個時間）
+  const pm = str.match(/下午\s*(\d{1,2})(?:[:\uff1a點](\d{1,2}))?/);
+  if (pm) {
+    let h = parseInt(pm[1]); if (h < 12) h += 12;
+    return String(h).padStart(2,'0') + ':' + (pm[2] ? String(pm[2]).padStart(2,'0') : '00');
+  }
+  const hm = str.match(/(\d{1,2})[:\uff1a點](\d{2})/);
+  if (hm) return String(hm[1]).padStart(2,'0') + ':' + hm[2];
+  return '';
+}
+
+function cleanSubject(s) {
+  return s
+    .replace(/\d{4}[.\/\-]\d{1,2}[.\/\-]\d{1,2}/g, '')   // 年份日期
+    .replace(/\d{1,2}[(（][^)）]*[)）]/g, '')      // 5/17（日）括號
+    .replace(/\d{1,2}[\/月\-]\d{1,2}[日號]?/g, '')           // 月/日
+    .replace(/下午\s*\d{1,2}[:\uff1a點]\d{0,2}/g, '')
+    .replace(/\d{1,2}[:\uff1a點]\d{2}\s*[-–~]\s*\d{1,2}[:\uff1a點]\d{2}/g, '') // 時段範圍
+    .replace(/星期[一二三四五六日天]/g, '')
+    .replace(/週[一二三四五六日天]/g, '')
+    .replace(/[(（][日一二三四五六天][\)）]/g, '')
+    .replace(/\s+/g, ' ').trim()
+    .replace(/^[\/,，\s]+|[\/,，\s]+$/g, '').trim();
+}
+
+// ── 解析單一體驗項目（從時段文字）──
+function parseSession(sessionStr) {
+  return {
+    date:    parseDate(sessionStr),
+    time:    parseTime(sessionStr),
+    subject: cleanSubject(sessionStr),
+  };
+}
+
+// ── 主解析函數 ──
+function parseApptText() {
   const raw = document.getElementById('appt-paste-input').value.trim();
   if (!raw) { showToast('請先貼上資料', true); return; }
 
   const btn = document.getElementById('appt-parse-btn');
   const status = document.getElementById('appt-parse-status');
-  btn.disabled = true;
-  btn.textContent = '⏳ 解析中...';
   status.textContent = '';
 
-  const today = new Date().toISOString().slice(0,10);
-  const staffList = getStaff().join('、');
-  const prompt = `你是一個資料解析助手。請從以下原始文字中提取體驗預約資訊，回傳 JSON 格式（只回傳 JSON，不要任何說明文字）。
+  const FIELDS = {
+    parentName: ['家長姓名','家長名','姓名','名字','家長','本人姓名','媽媽姓名','爸爸姓名'],
+    phone:      ['聯絡電話','電話','手機','行動電話','連絡電話','電話號碼','手機號碼'],
+    childName:  ['寶貝姓名','小孩姓名','孩子姓名','寶貝名','孩子名','小朋友姓名','寶寶姓名','學生姓名','寶貝'],
+    childBirth: ['寶貝出生','出生年月日','出生日期','生日','生年月日','出生','小孩生日','寶貝生日'],
+    subject:    ['體驗的時段','想安排的時段','科目','課程','想安排','想體驗','體驗課','想上','預約課程','時段'],
+  };
+  const ADULT_KW = ['選圖','多媒材','素描','水彩','油畫','成人','大人','壓克力'];
+  const CHILD_KW = ['黏土','積木','音樂律動','智高','兒童','小朋友','寶貝'];
 
-今天日期：${today}（年份為 2026，若文字中只有月/日則補上 2026）
+  const parentName = extractField(raw, FIELDS.parentName);
+  const phone      = extractField(raw, FIELDS.phone).replace(/[\s\-()（）]/g, '');
+  const childRaw   = extractField(raw, FIELDS.childName);   // 可能含多個
+  const birthRaw   = extractField(raw, FIELDS.childBirth);  // 可能含多個
+  const subjectRaw = extractField(raw, FIELDS.subject);
 
-請提取以下欄位：
-- dept: "2F"（兒童課程：黏土/繪畫/積木/音樂律動）或 "4F"（成人課程：選圖繪畫/多媒材），若無法判斷則 "2F"
-- parentName: 家長或本人姓名（字串）
-- phone: 電話號碼（字串，去除空格/符號）
-- childName: 小朋友姓名（字串，若為成人體驗則空字串）
-- childBirth: 出生年月日（字串，保留原格式）
-- subject: 課程/科目名稱（字串）
-- appointDate: 預約日期（YYYY-MM-DD 格式，若有星期幾提示請推算正確日期）
-- appointTime: 預約時間（HH:MM 24小時格式）
-- note: 其他備註（字串）
+  // dept 判斷
+  let dept = '2F';
+  if (ADULT_KW.some(k => raw.includes(k))) dept = '4F';
+  if (CHILD_KW.some(k => raw.includes(k)) || childRaw || birthRaw) dept = '2F';
 
-原始文字：
-${raw}
+  // ── 多孩子偵測：用 / 或換行分割 ──
+  // 孩子姓名：去掉括號備註（老大）（老二）後分割
+  const childNames  = childRaw  ? childRaw.split(/\/|，|,/).map(s => s.replace(/[（(][^）)]*[）)]/g,'').trim()).filter(Boolean) : [''];
+  const childBirths = birthRaw  ? birthRaw.split(/\/|，|,/).map(s => s.trim()).filter(Boolean) : [''];
+  // 時段：用 / 分割各筆
+  const sessions    = subjectRaw ? subjectRaw.split(/\//).map(s => s.trim()).filter(Boolean) : [subjectRaw || ''];
 
-回傳格式範例：
-{"dept":"2F","parentName":"江曼荷","phone":"0905730068","childName":"彭相翕","childBirth":"3/14","subject":"黏土課","appointDate":"2026-06-04","appointTime":"17:00","note":""}`;
+  const multiChild = childNames.length > 1 || sessions.length > 1;
+  const count = Math.max(childNames.length, sessions.length, 1);
 
-  if (!anthropicApiKey) {
-    status.textContent = '請先在「⚙ 設定」中填入 Anthropic API Key';
-    status.style.color = 'var(--color-red)';
-    btn.disabled = false; btn.textContent = '✨ 自動解析';
-    return;
-  }
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicApiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 600,
-        messages: [{ role: 'user', content: prompt }]
-      })
+  // 建立解析結果陣列
+  window._parsedAppts = [];
+  for (let i = 0; i < count; i++) {
+    const sess = parseSession(sessions[i] || sessions[0] || '');
+    window._parsedAppts.push({
+      dept,
+      parentName,
+      phone,
+      childName:  childNames[i]  || childNames[0]  || '',
+      childBirth: childBirths[i] || childBirths[0] || '',
+      subject:    sess.subject,
+      appointDate: sess.date,
+      appointTime: sess.time,
     });
-    const data = await res.json();
-
-    // API 回傳錯誤時顯示詳細訊息
-    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-
-    const text = (data.content || []).map(c => c.text || '').join('').trim();
-
-    let parsed;
-    try {
-      // 嘗試從回傳文字中提取 JSON（可能包在 markdown code block 裡）
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      const clean = jsonMatch ? jsonMatch[0] : text.replace(/```json|```/g, '').trim();
-      parsed = JSON.parse(clean);
-    } catch(e) {
-      // 若還是失敗，顯示實際回傳內容方便排查
-      throw new Error('格式錯誤，AI 回傳：' + text.slice(0, 100));
-    }
-
-    // 填入表單
-    selectApptDept(parsed.dept || '2F');
-    document.getElementById('appt-parentName').value = parsed.parentName || '';
-    document.getElementById('appt-phone').value      = parsed.phone || '';
-    document.getElementById('appt-childName').value  = parsed.childName || '';
-    document.getElementById('appt-childBirth').value = parsed.childBirth || '';
-    document.getElementById('appt-subject').value    = parsed.subject || '';
-    document.getElementById('appt-date').value       = parsed.appointDate || '';
-    document.getElementById('appt-time').value       = parsed.appointTime || '';
-    document.getElementById('appt-note').value       = parsed.note || '';
-
-    status.textContent = '✓ 解析完成，請確認欄位後儲存';
-    status.style.color = 'var(--color-green)';
-    // 捲動到表單區
-    document.getElementById('appt-parentName').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-  } catch(err) {
-    status.textContent = '解析失敗：' + err.message;
-    status.style.color = 'var(--color-red)';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '✨ 自動解析';
   }
+
+  // 填入第一筆
+  fillApptForm(window._parsedAppts[0]);
+
+  // ── 多筆提示區 ──
+  if (multiChild && count > 1) {
+    const extraBtns = window._parsedAppts.slice(1).map((a, i) =>
+      `<button class="appt-btn" style="font-size:12px;padding:4px 12px;margin-top:4px"
+        onclick="fillApptForm(window._parsedAppts[${i+1}]);document.getElementById('appt-multi-hint').style.display='none'">
+        ➕ 填入第 ${i+2} 筆：${a.childName||'—'} ${a.subject||''}
+      </button>`
+    ).join('');
+    let hint = document.getElementById('appt-multi-hint');
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.id = 'appt-multi-hint';
+      hint.style.cssText = 'background:#FFF7ED;border:1px solid #FED7AA;border-radius:6px;padding:8px 12px;margin-top:8px;font-size:12px';
+      document.getElementById('appt-paste-section').appendChild(hint);
+    }
+    hint.style.display = '';
+    hint.innerHTML = `<div style="font-weight:600;color:#C2410C;margin-bottom:4px">⚠ 偵測到 ${count} 筆預約（${count} 個小孩）</div>
+      <div style="color:#92400E">已填入第 1 筆，儲存後可繼續填入其他筆：</div>
+      ${extraBtns}`;
+    status.textContent = `✓ 已解析 ${count} 筆，目前顯示第 1 筆`;
+    status.style.color = 'var(--color-amber)';
+  } else {
+    const hint = document.getElementById('appt-multi-hint');
+    if (hint) hint.style.display = 'none';
+    const missing = [];
+    if (!parentName)                    missing.push('姓名');
+    if (!phone)                         missing.push('電話');
+    if (!window._parsedAppts[0].appointDate) missing.push('日期');
+    if (!window._parsedAppts[0].appointTime) missing.push('時間');
+    if (missing.length > 0) {
+      status.textContent = '✓ 已解析，請補填：' + missing.join('、');
+      status.style.color = 'var(--color-amber)';
+    } else {
+      status.textContent = '✓ 解析完成，請確認後儲存';
+      status.style.color = 'var(--color-green)';
+    }
+  }
+  document.getElementById('appt-parentName').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function fillApptForm(a) {
+  if (!a) return;
+  selectApptDept(a.dept || '2F');
+  document.getElementById('appt-parentName').value = a.parentName  || '';
+  document.getElementById('appt-phone').value      = a.phone       || '';
+  document.getElementById('appt-childName').value  = a.childName   || '';
+  document.getElementById('appt-childBirth').value = a.childBirth  || '';
+  document.getElementById('appt-subject').value    = a.subject     || '';
+  document.getElementById('appt-date').value       = a.appointDate || '';
+  document.getElementById('appt-time').value       = a.appointTime || '';
 }
 
 function openApptModal() {
