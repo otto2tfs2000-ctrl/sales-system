@@ -1016,6 +1016,18 @@ function startFirebaseListener() {
       Object.assign(state.dailyRevenue, data.dailyRevenue);
       changed = true;
     }
+    if (data.weekTargets) {
+      Object.assign(weekTargets, data.weekTargets);
+      changed = true;
+    }
+    if (data.leads) {
+      Object.assign(leads, data.leads);
+      changed = true;
+    }
+    if (data.appointments) {
+      Object.assign(appointments, data.appointments);
+      changed = true;
+    }
     if (changed) {
       retagRecordWeeks();
       localStorage.setItem('salesRecords', JSON.stringify(state.records));
@@ -2154,15 +2166,37 @@ function renderWeekly() {
     const staffLeads = Object.entries(leads).filter(([,l]) =>
       l.staff === staff && l.store === state.store && l.status === '追蹤中'
     );
-    const leadsHtml = staffLeads.length > 0
-      ? staffLeads.map(([id,l]) => `
+
+    // 體驗預約：已分配給此業務、狀態為「待確認」或「已確認」的名單
+    const staffAppts = Object.entries(appointments).filter(([,a]) =>
+      a.staff === staff && a.store === state.store &&
+      (a.status === '待確認' || a.status === '已確認')
+    ).sort((a,b) => a[1].appointDate > b[1].appointDate ? 1 : -1);
+
+    const apptHtml = staffAppts.length > 0
+      ? staffAppts.map(([id,a]) => {
+          const deptBadge = a.dept==='2F'
+            ? `<span style="font-size:9px;background:#FEF3C7;color:#B45309;padding:1px 5px;border-radius:8px;font-weight:700">2F</span>`
+            : `<span style="font-size:9px;background:#EDE9FE;color:#7C3AED;padding:1px 5px;border-radius:8px;font-weight:700">4F</span>`;
+          return `<div class="lead-mini-row" style="border-left:2px solid var(--color-amber);padding-left:6px;margin-bottom:3px">
+            <span class="lead-mini-cust">📅 ${a.appointDate} ${a.appointTime} ${deptBadge}</span>
+            <span class="lead-mini-dept">${a.status}</span>
+            <span class="lead-mini-amt" style="color:var(--color-text-secondary)">${a.subject||'—'}</span>
+            <span class="lead-mini-note">${(a.note||'').split('\n')[0]}</span>
+          </div>`;
+        }).join('')
+      : '';
+
+    const leadsHtml = (staffLeads.length > 0 || staffAppts.length > 0)
+      ? `${staffAppts.length > 0 ? `<div style="font-size:10px;color:var(--color-text-tertiary);margin:4px 0 2px;font-weight:600">🗓 體驗預約</div>${apptHtml}` : ''}
+         ${staffLeads.length > 0 ? `<div style="font-size:10px;color:var(--color-text-tertiary);margin:4px 0 2px;font-weight:600">🎯 追蹤中案件</div>${staffLeads.map(([id,l]) => `
           <div class="lead-mini-row">
             <span class="lead-mini-cust">${l.customer}</span>
             <span class="lead-mini-dept" style="font-size:10px;color:var(--color-text-tertiary)">${l.dept}</span>
             <span class="lead-mini-amt">預估 $${fmt(l.estimateAmt)}</span>
             <span class="lead-mini-note">${l.note||''}</span>
-          </div>`).join('')
-      : `<div style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px">無追蹤中的案件</div>`;
+          </div>`).join('')}` : ''}`
+      : `<div style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px">無體驗預約及追蹤中案件</div>`;
 
     weekTargetCards += `
       <div class="week-target-card">
