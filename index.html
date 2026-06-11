@@ -1017,16 +1017,20 @@ function startFirebaseListener() {
       changed = true;
     }
     if (data.weekTargets) {
-      Object.assign(weekTargets, data.weekTargets);
+      weekTargets = data.weekTargets;
       changed = true;
     }
     if (data.leads) {
-      Object.assign(leads, data.leads);
+      leads = data.leads;
       changed = true;
     }
     if (data.appointments) {
-      Object.assign(appointments, data.appointments);
+      appointments = data.appointments;
+      console.log('[Firebase] appointments synced:', Object.keys(appointments).length, 'records');
       changed = true;
+    } else {
+      // Firebase 回傳沒有 appointments 欄位，代表尚未有資料
+      appointments = {};
     }
     if (changed) {
       retagRecordWeeks();
@@ -1199,9 +1203,9 @@ async function loadFromSheets(silent=false) {
     if (!data) { showToast('Firebase 尚無資料，請先上傳一次', true); return; }
     if (data.records) state.records = data.records;
     if (data.targets) Object.assign(monthTargets, data.targets);
-    if (data.weekTargets) Object.assign(weekTargets, data.weekTargets);
-    if (data.leads) Object.assign(leads, data.leads);
-    if (data.appointments) Object.assign(appointments, data.appointments);
+    if (data.weekTargets) weekTargets = data.weekTargets;
+    if (data.leads) leads = data.leads;
+    if (data.appointments) appointments = data.appointments;
     if (data.manualStats) Object.assign(state.manualStats, data.manualStats);
     if (data.monthStaff) Object.assign(monthStaff, data.monthStaff);
     if (data.settings && data.settings.invPrefixes) Object.assign(state.invPrefixes, data.settings.invPrefixes);
