@@ -1069,16 +1069,17 @@ function getDailyFromSalary(store, month, day) {
   const rec = state.salary4fDaily[key];
   if (!rec) return { newCust: 0, oldCust: 0, headCount: 0, sales: 0 };
   const entries = rec.entries || [];
-  let newCust = 0, oldCust = 0, headCount = 0, sales = 0;
+  let newCust = 0, oldCust = 0, headCount = 0;
   for (const e of entries) {
     newCust += e.newCust || 0;
     oldCust += e.oldCust || 0;
     for (const tid of Object.keys(e.teachers || {})) {
-      const t = e.teachers[tid];
-      headCount += t.count || 0;
-      sales += t.sales || 0;
+      headCount += e.teachers[tid].count || 0;
     }
   }
+  // 營收用 revenue 欄位（salary system 儲存的實際課程收入）
+  // t.sales 是薪資計算用的業績數字，不是實際營收
+  const sales = rec.revenue || 0;
   return { newCust, oldCust, headCount, sales };
 }
 // 舊名稱保留相容
