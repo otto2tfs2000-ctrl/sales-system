@@ -967,6 +967,7 @@ let fbApp = null;
 let fbDb = null;
 let fbListener = null; // active realtime listener
 let fbSalaryListener = null; // listener for salaryData/daily (4F 成人登記)
+let fbInitialSyncDone = false; // listener 是否已收到第一次完整資料（避免空值覆蓋雲端）
 
 function initFirebase(config) {
   try {
@@ -1026,12 +1027,10 @@ function startFirebaseListener() {
     }
     if (data.appointments) {
       appointments = data.appointments;
-      console.log('[Firebase] appointments synced:', Object.keys(appointments).length, 'records');
       changed = true;
-    } else {
-      // Firebase 回傳沒有 appointments 欄位，代表尚未有資料
-      appointments = {};
     }
+    // 注意：若 data.appointments 不存在，保留本機現有資料，不清空（避免資料遺失）
+    fbInitialSyncDone = true;
     if (changed) {
       retagRecordWeeks();
       localStorage.setItem('salesRecords', JSON.stringify(state.records));
@@ -1166,6 +1165,12 @@ function updateSyncDot() {
 async function syncToFirebase(silent=false) {
   if (!fbDb) {
     if (!silent) showToast('請先在設定中填入 Firebase 設定', true);
+    return false;
+  }
+  if (!fbInitialSyncDone) {
+    // 尚未從雲端收到第一次資料，禁止寫入，避免用本機空值覆蓋雲端
+    console.warn('[Firebase] 尚未完成初次同步，跳過寫入以保護雲端資料');
+    if (!silent) showToast('正在連線雲端資料，請稍候再試', true);
     return false;
   }
   syncStatus = 'busy'; updateSyncDot();
