@@ -1663,13 +1663,36 @@ function renderDaily() {
     const rate2f = target2f > 0 ? cashIncome2f / target2f : null;
     const rate4f = target4f > 0 ? cashIncome4f / target4f : null;
 
+    // 並排顯示：現收 + 營收，字體大小一致
+    const dualValue2f = `
+      <div style="display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap">
+        <div>
+          <div class="kpi-value">$${fmt(cashIncome2f)}</div>
+          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">現收</div>
+        </div>
+        ${total2fImport>0?`<div>
+          <div class="kpi-value">$${fmt(total2fImport)}</div>
+          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">營收　${head2fImport}人次</div>
+        </div>`:''}
+      </div>`;
+    const dualValue4f = `
+      <div style="display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap">
+        <div>
+          <div class="kpi-value">$${fmt(cashIncome4f)}</div>
+          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">現收</div>
+        </div>
+        ${total4fRev>0?`<div>
+          <div class="kpi-value">$${fmt(total4fRev)}</div>
+          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">營收　${head4fTotal}人次</div>
+        </div>`:''}
+      </div>`;
+
     kpiCards = `
       <div class="kpi-card">
-        <div class="kpi-label">2F 現金收入</div>
-        <div class="kpi-value">$${fmt(cashIncome2f)}</div>
-        ${total2fImport>0?`<div style="font-size:12px;color:var(--color-text-secondary);margin-top:2px">耗課營收 <strong>$${fmt(total2fImport)}</strong>　${head2fImport}人次</div>`:''}
+        <div class="kpi-label">2F 業績</div>
+        ${dualValue2f}
         ${rate2f !== null
-          ? `<div style="display:flex;align-items:baseline;gap:6px;margin-top:4px">
+          ? `<div style="display:flex;align-items:baseline;gap:6px;margin-top:8px">
               <span style="font-size:16px;font-weight:700;color:${rateColor(rate2f)}">${fmtRate(rate2f)}</span>
               <span style="font-size:11px;color:var(--color-text-tertiary)">/ 目標 $${fmt(target2f)}</span>
              </div>
@@ -1677,11 +1700,10 @@ function renderDaily() {
           : `<div class="kpi-sublabel">目標未設定</div>`}
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">4F 現金收入</div>
-        <div class="kpi-value">$${fmt(cashIncome4f)}</div>
-        ${total4fRev>0?`<div style="font-size:12px;color:var(--color-text-secondary);margin-top:2px">耗課營收 <strong>$${fmt(total4fRev)}</strong>　${head4fTotal}人次</div>`:''}
+        <div class="kpi-label">4F 業績</div>
+        ${dualValue4f}
         ${rate4f !== null
-          ? `<div style="display:flex;align-items:baseline;gap:6px;margin-top:4px">
+          ? `<div style="display:flex;align-items:baseline;gap:6px;margin-top:8px">
               <span style="font-size:16px;font-weight:700;color:${rateColor(rate4f)}">${fmtRate(rate4f)}</span>
               <span style="font-size:11px;color:var(--color-text-tertiary)">/ 目標 $${fmt(target4f)}</span>
              </div>
@@ -1692,13 +1714,23 @@ function renderDaily() {
     const guotuTarget = tgt._store || 0;
     storeTarget = guotuTarget;
     const rateG = guotuTarget > 0 ? cashTotal / guotuTarget : null;
+    const dualValueKg = `
+      <div style="display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap">
+        <div>
+          <div class="kpi-value">$${fmt(cashTotal)}</div>
+          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">現收</div>
+        </div>
+        ${totalKgRev>0?`<div>
+          <div class="kpi-value">$${fmt(totalKgRev)}</div>
+          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">營收　${headKgTotal}人次</div>
+        </div>`:''}
+      </div>`;
     kpiCards = `
       <div class="kpi-card">
-        <div class="kpi-label">現金收入</div>
-        <div class="kpi-value">$${fmt(cashTotal)}</div>
-        ${totalKgRev>0?`<div style="font-size:12px;color:var(--color-text-secondary);margin-top:2px">耗課營收 <strong>$${fmt(totalKgRev)}</strong>　${headKgTotal}人次</div>`:''}
+        <div class="kpi-label">業績</div>
+        ${dualValueKg}
         ${rateG !== null
-          ? `<div style="display:flex;align-items:baseline;gap:6px;margin-top:4px">
+          ? `<div style="display:flex;align-items:baseline;gap:6px;margin-top:8px">
               <span style="font-size:16px;font-weight:700;color:${rateColor(rateG)}">${fmtRate(rateG)}</span>
               <span style="font-size:11px;color:var(--color-text-tertiary)">/ 目標 $${fmt(guotuTarget)}</span>
              </div>
@@ -2558,8 +2590,18 @@ function renderEntry() {
 
   // Filter by dept
   const filter = state.entryDeptFilter || '所有';
-  const allMonthRecs = state.records
-    .filter(r => r.month === state.month && (filter === '所有' || r.dept === filter))
+  // Filter by payment method (含尾款比對)
+  const payFilter = state.entryPayFilter || '全部';
+
+  const monthRecsAll = state.records.filter(r => r.month === state.month);
+  const monthRecsBase = monthRecsAll.filter(r => !r.voided); // 統計用，排除作廢
+
+  const allMonthRecs = monthRecsAll
+    .filter(r => (filter === '所有' || r.dept === filter))
+    .filter(r => {
+      if (payFilter === '全部') return true;
+      return r.pay === payFilter || r.pay2 === payFilter;
+    })
     .slice().sort((a,b) => {
       const ia = a.invSuffix || '9999';
       const ib = b.invSuffix || '9999';
@@ -2572,6 +2614,35 @@ function renderEntry() {
     `<button class="dept-filter-btn ${filter===d?'active':''}" onclick="state.entryDeptFilter='${d}';renderEntry()">${d}</button>`
   ).join('');
 
+  // 付款別篩選按鈕
+  const payFilterBtns = ['全部', ...PAY_METHODS].map(p =>
+    `<button class="dept-filter-btn ${payFilter===p?'active':''}" onclick="state.entryPayFilter='${p}';renderEntry()">${p}</button>`
+  ).join('');
+
+  // 付款別金額統計：依「金額篩選別」加總該月份所有符合的款項（含尾款拆分）
+  let payFilterTotal = 0, payFilterCount = 0;
+  if (payFilter !== '全部') {
+    // 統計範圍：本月（不受部門篩選影響，符合「整月份所有的XX款項」需求）
+    for (const r of monthRecsBase) {
+      let sub = 0;
+      if (r.pay2) {
+        // 有拆分付款：分別比對 amount1(=訂金/主付款) 與 amount2(=尾款)
+        const amt1 = (r.amount1 != null) ? r.amount1 : r.amount;
+        const amt2 = (r.amount2 != null) ? r.amount2 : 0;
+        if (r.pay === payFilter) sub += amt1;
+        if (r.pay2 === payFilter) sub += amt2;
+      } else {
+        if (r.pay === payFilter) sub += r.amount;
+      }
+      if (sub !== 0) {
+        // 退款/退費分類視為負數
+        const sign = ['退費','退款'].includes(r.category) ? -1 : 1;
+        payFilterTotal += sub * sign;
+        payFilterCount++;
+      }
+    }
+  }
+
   let recRows = allMonthRecs.length === 0
     ? `<tr><td colspan="14" class="empty-state">尚無記錄</td></tr>`
     : allMonthRecs.map((r) => {
@@ -2582,15 +2653,21 @@ function renderEntry() {
         ? `<button class="void-btn" onclick="unvoidRec('${r.id}')" title="恢復"><span>↻</span></button>`
         : `<button class="void-btn" onclick="voidRec('${r.id}')" title="作廢發票"><span>🚫</span></button>`;
 
+      const hl = (m) => (payFilter !== '全部' && m === payFilter)
+        ? 'background:#FEF3C7;border-radius:4px;padding:1px 4px;font-weight:700'
+        : '';
       let payCell = r.pay || '—';
       if (r.payDetail) payCell += `<span style="font-size:11px;color:var(--color-text-tertiary)"> ${r.payDetail}</span>`;
+      if (r.pay || r.pay2) {
+        payCell = `<span style="font-size:12px;${hl(r.pay)}">${r.pay||'—'}${r.payDetail?` <span style="color:var(--color-text-tertiary);font-size:11px">${r.payDetail}</span>`:''}</span>`;
+      }
       if (r.pay2) {
         const amt1label = r.amount1 ? `$${fmt(r.amount1)}` : '';
         const amt2label = r.amount2 ? `$${fmt(r.amount2)}` : '';
-        payCell = `<span style="font-size:12px">${r.pay}${r.payDetail?` <span style="color:var(--color-text-tertiary);font-size:11px">${r.payDetail}</span>`:''}</span>
+        payCell = `<span style="font-size:12px;${hl(r.pay)}">${r.pay}${r.payDetail?` <span style="color:var(--color-text-tertiary);font-size:11px">${r.payDetail}</span>`:''}</span>
           ${amt1label ? `<span style="font-size:11px;color:var(--color-text-secondary)"> ${amt1label}</span>` : ''}
           <br><span class="pay-split-badge">尾款</span>
-          <span style="font-size:12px">${r.pay2}${r.payDetail2?` <span style="color:var(--color-text-tertiary);font-size:11px">${r.payDetail2}</span>`:''}</span>
+          <span style="font-size:12px;${hl(r.pay2)}">${r.pay2}${r.payDetail2?` <span style="color:var(--color-text-tertiary);font-size:11px">${r.payDetail2}</span>`:''}</span>
           ${amt2label ? `<span style="font-size:11px;color:var(--color-text-secondary)"> ${amt2label}</span>` : ''}`;
       }
 
@@ -2669,6 +2746,18 @@ function renderEntry() {
     <div class="dept-filter-bar">
       <span>篩選部門：</span>
       ${deptFilters}
+    </div>
+    <div class="dept-filter-bar">
+      <span>篩選付款別：</span>
+      ${payFilterBtns}
+      ${payFilter !== '全部' ? `
+        <span style="margin-left:12px;font-weight:700;font-size:14px;color:var(--color-accent)">
+          ${state.month}月「${payFilter}」共 ${payFilterCount} 筆，合計
+          $${fmt(payFilterTotal)}
+        </span>
+        <span style="font-size:11px;color:var(--color-text-tertiary);margin-left:6px">
+          （含尾款／訂金拆分中屬於「${payFilter}」的部分，不受部門篩選影響）
+        </span>` : ''}
     </div>
     <div class="table-wrap">
     <table class="records-table">
