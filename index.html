@@ -2622,8 +2622,9 @@ function renderEntry() {
   // 付款別金額統計：依「金額篩選別」加總該月份所有符合的款項（含尾款拆分）
   let payFilterTotal = 0, payFilterCount = 0;
   if (payFilter !== '全部') {
-    // 統計範圍：本月（不受部門篩選影響，符合「整月份所有的XX款項」需求）
-    for (const r of monthRecsBase) {
+    // 統計範圍：依目前部門篩選計算
+    const deptFilteredRecs = monthRecsBase.filter(r => filter === '所有' || r.dept === filter);
+    for (const r of deptFilteredRecs) {
       let sub = 0;
       if (r.pay2) {
         // 有拆分付款：分別比對 amount1(=訂金/主付款) 與 amount2(=尾款)
@@ -2756,7 +2757,7 @@ function renderEntry() {
           $${fmt(payFilterTotal)}
         </span>
         <span style="font-size:11px;color:var(--color-text-tertiary);margin-left:6px">
-          （含尾款／訂金拆分中屬於「${payFilter}」的部分，不受部門篩選影響）
+          （含尾款／訂金拆分中屬於「${payFilter}」的部分${filter!=='所有'?`，部門：${filter}`:'，全部部門'}）
         </span>` : ''}
     </div>
     <div class="table-wrap">
