@@ -2594,6 +2594,8 @@ function renderEntry() {
   // Filter by payment method (含尾款比對)
   const payFilter = state.entryPayFilter || '全部';
 
+  const hqFilter = state.entryHqFilter || false;
+
   const monthRecsAll = state.records.filter(r => r.month === state.month);
   const monthRecsBase = monthRecsAll.filter(r => !r.voided); // 統計用，排除作廢
 
@@ -2611,8 +2613,6 @@ function renderEntry() {
     });
 
   const pendingCount = state.records.filter(r=>r.month===state.month&&r.pending&&!r.voided).length;
-
-  const hqFilter = state.entryHqFilter || false;
   const deptFilters = ['所有','2F','4F','國圖'].map(d =>
     `<button class="dept-filter-btn ${filter===d?'active':''}" onclick="state.entryDeptFilter='${d}';renderEntry()">${d}</button>`
   ).join('') + `<button class="dept-filter-btn ${hqFilter?'active':''}" style="${hqFilter?'background:#6D28D9;color:#fff;border-color:#6D28D9':''}" onclick="state.entryHqFilter=!state.entryHqFilter;renderEntry()">🏢 總部發票</button>`;
