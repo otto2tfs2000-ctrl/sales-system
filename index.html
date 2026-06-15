@@ -290,6 +290,7 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 
 /* ── Voided records ── */
 .record-voided td { text-decoration:line-through;color:var(--color-text-tertiary)!important;font-weight:400!important; }
+.record-hq td { background:#F5F3FF; }
 .badge-void { background:#F3F4F6;color:#6B7280; }
 .void-btn { background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);font-size:13px;padding:3px 5px;border-radius:var(--radius-sm);transition:all .15s; }
 .void-btn:hover { color:var(--color-amber);background:var(--color-amber-bg); }
@@ -2277,7 +2278,7 @@ function renderWeekly() {
     : `<table class="pending-table"><thead><tr><th>日期</th><th>部門</th><th>發票號</th><th>客戶</th><th>業務</th><th>金額</th><th>備註</th><th>操作</th></tr></thead><tbody>${
       pendingRecs.map(r => {
         const prefix = state.invPrefixes[r.month] || r.invPrefix || '';
-        const inv = r.invSuffix ? prefix+r.invSuffix : '—';
+        const inv = r.invSuffix ? (r.hqInv ? r.invSuffix : prefix+r.invSuffix) : '—';
         return `<tr>
           <td>${r.month}/${r.day}</td>
           <td>${r.dept||'—'}</td>
@@ -2598,6 +2599,7 @@ function renderEntry() {
 
   const allMonthRecs = monthRecsAll
     .filter(r => (filter === '所有' || r.dept === filter))
+    .filter(r => !hqFilter || r.hqInv)
     .filter(r => {
       if (payFilter === '全部') return true;
       return r.pay === payFilter || r.pay2 === payFilter;
@@ -2610,9 +2612,10 @@ function renderEntry() {
 
   const pendingCount = state.records.filter(r=>r.month===state.month&&r.pending&&!r.voided).length;
 
+  const hqFilter = state.entryHqFilter || false;
   const deptFilters = ['所有','2F','4F','國圖'].map(d =>
     `<button class="dept-filter-btn ${filter===d?'active':''}" onclick="state.entryDeptFilter='${d}';renderEntry()">${d}</button>`
-  ).join('');
+  ).join('') + `<button class="dept-filter-btn ${hqFilter?'active':''}" style="${hqFilter?'background:#6D28D9;color:#fff;border-color:#6D28D9':''}" onclick="state.entryHqFilter=!state.entryHqFilter;renderEntry()">🏢 總部發票</button>`;
 
   // 付款別篩選按鈕
   const payFilterBtns = ['全部', ...PAY_METHODS].map(p =>
@@ -2623,7 +2626,9 @@ function renderEntry() {
   let payFilterTotal = 0, payFilterCount = 0;
   if (payFilter !== '全部') {
     // 統計範圍：依目前部門篩選計算
-    const deptFilteredRecs = monthRecsBase.filter(r => filter === '所有' || r.dept === filter);
+    const deptFilteredRecs = monthRecsBase
+      .filter(r => filter === '所有' || r.dept === filter)
+      .filter(r => !hqFilter || r.hqInv);
     for (const r of deptFilteredRecs) {
       let sub = 0;
       if (r.pay2) {
@@ -2647,9 +2652,12 @@ function renderEntry() {
   let recRows = allMonthRecs.length === 0
     ? `<tr><td colspan="14" class="empty-state">尚無記錄</td></tr>`
     : allMonthRecs.map((r) => {
-      const fullInv = r.invSuffix ? (r.invPrefix || prefix || '—') + r.invSuffix : '—';
+      const fullInv = r.invSuffix
+        ? (r.hqInv ? r.invSuffix : (r.invPrefix || prefix || '') + r.invSuffix)
+        : '—';
       const voidBadge = r.voided ? ' <span class="badge badge-void">作廢</span>' : '';
       const pendingBadge = r.pending && !r.voided ? ' <span class="badge-pending"><span style="style="font-size:9px"">⚠</span> 未入帳</span>' : '';
+      const hqBadge = r.hqInv ? ' <span style="font-size:9px;font-weight:700;background:#EDE9FE;color:#6D28D9;padding:1px 5px;border-radius:8px;border:1px solid #DDD6FE">🏢總部</span>' : '';
       const voidBtn = r.voided
         ? `<button class="void-btn" onclick="unvoidRec('${r.id}')" title="恢復"><span>↻</span></button>`
         : `<button class="void-btn" onclick="voidRec('${r.id}')" title="作廢發票"><span>🚫</span></button>`;
@@ -2672,12 +2680,12 @@ function renderEntry() {
           ${amt2label ? `<span style="font-size:11px;color:var(--color-text-secondary)"> ${amt2label}</span>` : ''}`;
       }
 
-      const rowClass = r.voided ? 'record-voided' : (r.pending ? 'record-pending' : '');
+      const rowClass = r.voided ? 'record-voided' : (r.pending ? 'record-pending' : (r.hqInv ? 'record-hq' : ''));
 
       return `<tr class="${rowClass}">
         <td>${state.month}/${r.day}</td>
         <td>${r.dept||'—'}</td>
-        <td class="inv-col">${fullInv}${voidBadge}${pendingBadge}</td>
+        <td class="inv-col">${fullInv}${voidBadge}${pendingBadge}${hqBadge}</td>
         <td style="max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.category||'—'}</td>
         <td>${r.source||'—'}</td>
         <td>${r.staff||'—'}</td>
@@ -2710,7 +2718,10 @@ function renderEntry() {
       <div class="field"><label>客戶來源</label><select id="f-src">${srcOpts}</select></div>
       <div class="field"><label>業務</label><select id="f-staff">${staffOpts}</select></div>
       <div class="field"><label>客戶姓名</label><input type="text" id="f-customer" placeholder="選填"></div>
-      <div class="field"><label>發票號碼後4碼</label><input type="text" id="f-inv" placeholder="例如：0001" maxlength="4" style="font-family:monospace;letter-spacing:1px"></div>
+      <div class="field" id="f-inv-wrap">
+        <label id="f-inv-label">發票號碼後4碼</label>
+        <input type="text" id="f-inv" placeholder="例如：0001" maxlength="4" style="font-family:monospace;letter-spacing:1px">
+      </div>
 
       <!-- 主要付款（第一筆 / 訂金） -->
       <div class="field"><label id="f-amount-label">金額</label><input type="number" id="f-amount" placeholder="0" min="0" oninput="updateSplitTotal()"></div>
@@ -2732,6 +2743,13 @@ function renderEntry() {
       </div>
 
       <div class="field" style="grid-column:1/-1"><label>備註</label><input type="text" id="f-note" placeholder="其他事項登記（選填）"></div>
+      <div class="field" style="grid-column:1/-1;padding:6px 0">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;font-size:13px;width:fit-content">
+          <input type="checkbox" id="f-hq-inv" style="width:15px;height:15px;accent-color:var(--color-accent)" onchange="toggleHqInvMode(this.checked)">
+          <span>🏢 總部發票</span>
+          <span style="font-size:11px;color:var(--color-text-tertiary)">（由總部另開發票的帳款）</span>
+        </label>
+      </div>
       <div class="entry-btn-row">
         <button class="btn-secondary" onclick="loadFromSheets()"><span>☁</span> 從試算表載入</button>
         <button class="btn-primary" onclick="addRecord()"><span>✓</span> 新增</button>
@@ -2880,6 +2898,25 @@ function updatePayDetail2() {
   }
 }
 
+function toggleHqInvMode(isHq) {
+  const label = document.getElementById('f-inv-label');
+  const input = document.getElementById('f-inv');
+  if (!label || !input) return;
+  if (isHq) {
+    label.textContent = '完整發票號碼';
+    input.placeholder = '例如：CD-87654321';
+    input.maxLength = 20;
+    input.style.letterSpacing = '0';
+  } else {
+    label.textContent = '發票號碼後4碼';
+    input.placeholder = '例如：0001';
+    input.maxLength = 4;
+    input.style.letterSpacing = '1px';
+    // 若已輸入超過4碼，清空避免誤存
+    if (input.value.length > 4) input.value = '';
+  }
+}
+
 function addRecord() {
   const day = parseInt(document.getElementById('f-day').value);
   const dept = document.getElementById('f-dept').value;
@@ -2887,12 +2924,15 @@ function addRecord() {
   const source = document.getElementById('f-src').value;
   const staff = document.getElementById('f-staff').value;
   const customer = document.getElementById('f-customer').value.trim();
-  const invSuffix = document.getElementById('f-inv').value.trim();
+  const invRaw = document.getElementById('f-inv').value.trim();
   const pay = document.getElementById('f-pay').value;
   const payDetail = document.getElementById('f-pay-detail')?.value.trim() || '';
   const note = document.getElementById('f-note').value.trim();
+  const hqInv = document.getElementById('f-hq-inv')?.checked || false;
   const week = getWeekForDate(state.month, day);
-  const invPrefix = state.invPrefixes[state.month] || '';
+  // 總部發票：完整號碼直接存，不加前綴；一般發票：存後4碼，顯示時組合前綴
+  const invSuffix = invRaw;
+  const invPrefix = hqInv ? '' : (state.invPrefixes[state.month] || '');
 
   const hasSplit = document.getElementById('split-pay-block')?.classList.contains('visible');
   const amount1 = parseFloat(document.getElementById('f-amount').value) || 0;
@@ -2907,7 +2947,7 @@ function addRecord() {
   if (!dept || amount <= 0) { showToast('請填寫部門與金額', true); return; }
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2,5);
   const pending = pay === '未入帳';
-  const rec = { id, month: state.month, day, dept, category, source, staff, customer, amount: finalAmount, pay, payDetail, invPrefix, invSuffix, note, week, voided: false, pending };
+  const rec = { id, month: state.month, day, dept, category, source, staff, customer, amount: finalAmount, pay, payDetail, invPrefix, invSuffix, note, week, voided: false, pending, hqInv: hqInv || undefined };
   if (hasSplit && (amount1 > 0 || amount2 > 0)) {
     rec.amount1 = amount1;
     rec.amount2 = amount2;
@@ -2920,6 +2960,10 @@ function addRecord() {
   document.getElementById('f-customer').value = '';
   document.getElementById('f-inv').value = '';
   document.getElementById('f-note').value = '';
+  if (document.getElementById('f-hq-inv')) {
+    document.getElementById('f-hq-inv').checked = false;
+    toggleHqInvMode(false);
+  }
   if (document.getElementById('f-pay-detail')) document.getElementById('f-pay-detail').value = '';
   if (hasSplit) {
     document.getElementById('f-amount2').value = '';
@@ -3041,7 +3085,12 @@ function openEditModal(id) {
       <div class="field"><label>客戶來源</label><select id="e-src">${srcOpts}</select></div>
       <div class="field"><label>業務</label><select id="e-staff">${staffOpts}</select></div>
       <div class="field"><label>客戶姓名</label><input type="text" id="e-customer" value="${rec.customer||''}"></div>
-      <div class="field"><label>發票後4碼</label><input type="text" id="e-inv" value="${rec.invSuffix||''}" maxlength="4" style="font-family:monospace"></div>
+      <div class="field">
+        <label id="e-inv-label">${rec.hqInv ? '完整發票號碼' : '發票後4碼'}</label>
+        <input type="text" id="e-inv" value="${rec.invSuffix||''}"
+          maxlength="${rec.hqInv ? 20 : 4}"
+          style="font-family:monospace;letter-spacing:${rec.hqInv?'0':'1px'}">
+      </div>
       <div class="field"><label>金額</label><input type="number" id="e-amount" value="${rec.amount1||rec.amount||0}" min="0"></div>
       <div class="field"><label>付款方式</label><select id="e-pay">${payOpts}</select></div>
       <div class="field"><label>付款補充</label><input type="text" id="e-paydetail" value="${rec.payDetail||''}" maxlength="20"></div>
@@ -3051,6 +3100,18 @@ function openEditModal(id) {
       <div class="field"><label>尾款補充</label><input type="text" id="e-paydetail2" value="${rec.payDetail2||''}" maxlength="20"></div>
       `:''}
       <div class="field" style="grid-column:1/-1"><label>備註</label><input type="text" id="e-note" value="${rec.note||''}"></div>
+      <div class="field" style="grid-column:1/-1;padding:4px 0">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;font-size:13px;width:fit-content">
+          <input type="checkbox" id="e-hq-inv" ${rec.hqInv?'checked':''} style="width:15px;height:15px;accent-color:var(--color-accent)"
+            onchange="(function(v){
+              const lbl=document.getElementById('e-inv-label');
+              const inp=document.getElementById('e-inv');
+              if(v){lbl.textContent='完整發票號碼';inp.maxLength=20;inp.style.letterSpacing='0';}
+              else{lbl.textContent='發票後4碼';inp.maxLength=4;inp.style.letterSpacing='1px';if(inp.value.length>4)inp.value='';}
+            })(this.checked)">
+          <span>🏢 總部發票</span>
+        </label>
+      </div>
       <div class="field"><label>未入帳狀態</label><select id="e-pending">
         <option value="0" ${!rec.pending?'selected':''}>已入帳</option>
         <option value="1" ${rec.pending?'selected':''}>未入帳（粉紅標注）</option>
@@ -3078,9 +3139,11 @@ function saveEdit() {
   rec.staff = document.getElementById('e-staff').value;
   rec.customer = document.getElementById('e-customer').value.trim();
   rec.invSuffix = document.getElementById('e-inv').value.trim();
+  rec.invPrefix = rec.hqInv ? '' : (state.invPrefixes[rec.month] || rec.invPrefix || '');
   rec.pay = document.getElementById('e-pay').value;
   rec.payDetail = document.getElementById('e-paydetail').value.trim();
   rec.note = document.getElementById('e-note').value.trim();
+  rec.hqInv = document.getElementById('e-hq-inv')?.checked || undefined;
   rec.pending = document.getElementById('e-pending').value === '1';
   const a1 = parseFloat(document.getElementById('e-amount')?.value) || 0;
   if (rec.pay2) {
