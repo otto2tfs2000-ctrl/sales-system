@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商品標籤產生器</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Microsoft JhengHei', Arial, sans-serif;
+  background: #f0f4f8;
+  color: #222;
+  min-height: 100vh;
+}
+header {
+  background: #1a6faf;
+  color: #fff;
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+header h1 { font-size: 22px; font-weight: 700; }
+header p { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+
+.container { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+
+/* STEP CARDS */
+.step {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  border-left: 5px solid #1a6faf;
+}
+.step-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a6faf;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.step-num {
+  background: #1a6faf;
+  color: #fff;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* UPLOAD ZONE */
+.upload-zone {
+  border: 2.5px dashed #5aaee0;
+  border-radius: 12px;
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #f5faff;
+  transition: background 0.2s;
+  position: relative;
+}
+.upload-zone:hover { background: #e8f3ff; }
+.upload-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.upload-icon { font-size: 40px; margin-bottom: 10px; }
+.upload-hint { font-size: 14px; color: #666; line-height: 1.7; }
+.upload-hint strong { color: #1a6faf; }
+
+#preview-area {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px;
+}
+.preview-thumb {
+  position: relative; width: 100px; height: 100px;
+}
+.preview-thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+  border-radius: 8px; border: 2px solid #5aaee0;
+}
+.preview-thumb .remove-btn {
+  position: absolute; top: -6px; right: -6px;
+  background: #e00; color: #fff;
+  border: none; border-radius: 50%;
+  width: 20px; height: 20px;
+  font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* TABLE */
+.table-wrap { overflow-x: auto; margin-top: 10px; }
+table.data-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  min-width: 700px;
+}
+table.data-table th {
+  background: #1a6faf; color: #fff;
+  padding: 10px 12px; text-align: left; white-space: nowrap;
+}
+table.data-table td {
+  padding: 8px 10px; border-bottom: 1px solid #e8e8e8;
+  vertical-align: top;
+}
+table.data-table tr:hover td { background: #f5faff; }
+table.data-table td input {
+  width: 100%; border: none; background: transparent;
+  font-size: 13px; font-family: inherit;
+  outline: none; padding: 2px 0;
+}
+table.data-table td input:focus {
+  border-bottom: 1.5px solid #1a6faf;
+}
+.del-row-btn {
+  background: none; border: none; cursor: pointer;
+  color: #cc0000; font-size: 16px; padding: 2px 6px;
+}
+
+/* BUTTONS */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-radius: 10px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  border: none; transition: background 0.2s, transform 0.1s;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: #1a6faf; color: #fff; }
+.btn-primary:hover { background: #155a8a; }
+.btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+.btn-secondary { background: #e8f3ff; color: #1a6faf; border: 2px solid #1a6faf; }
+.btn-secondary:hover { background: #d0e8ff; }
+.btn-green { background: #1a8a3f; color: #fff; }
+.btn-green:hover { background: #157032; }
+.btn-excel { background: #217346; color: #fff; }
+.btn-excel:hover { background: #185c38; }
+.btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+
+/* STATUS */
+.status-box {
+  background: #f0f7ff; border: 1.5px solid #5aaee0;
+  border-radius: 10px; padding: 14px 18px;
+  font-size: 14px; margin-top: 14px; display: none;
+  white-space: pre-line; line-height: 1.7;
+}
+.status-box.show { display: block; }
+.status-box.error { background: #fff0f0; border-color: #e00; }
+.status-box.success { background: #f0fff4; border-color: #1a8a3f; color: #1a6030; }
+
+/* PROGRESS */
+.progress-bar-wrap {
+  background: #e0e0e0; border-radius: 8px;
+  height: 12px; margin-top: 12px; overflow: hidden; display: none;
+}
+.progress-bar-wrap.show { display: block; }
+.progress-bar {
+  height: 100%; background: #1a6faf;
+  border-radius: 8px; transition: width 0.3s;
+  width: 0%;
+}
+
+/* OUTPUT GRID */
+#output-grid {
+  display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px;
+}
+.output-item { text-align: center; }
+.output-item img {
+  max-width: 200px; border-radius: 8px;
+  border: 2px solid #5aaee0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.output-item p { font-size: 12px; color: #555; margin-top: 4px; }
+.output-item a {
+  display: inline-block; margin-top: 4px;
+  font-size: 12px; color: #1a6faf; text-decoration: underline;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📦 商品標籤產生器</h1>
+    <p>拍照上傳 → AI 解析 → 自動輸出 PNG 標籤</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- STEP 1: 上傳照片 -->
+  <div class="step">
+    <div class="step-title"><span class="step-num">1</span> 上傳商品資料照片（可一次多張）</div>
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" accept="image/*" multiple>
+      <div class="upload-icon">📷</div>
+      <div class="upload-hint">
+        點擊或拖曳照片到這裡<br>
+        支援 <strong>JPG / PNG / HEIC</strong>，可同時上傳多張<br>
+        （商品外箱、說明書、進口商標籤 都可以）
+      </div>
+    </div>
+    <div id="preview-area"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="parse-btn" disabled>🤖 AI 解析照片資料</button>
+    </div>
+    <div class="status-box" id="parse-status"></div>
+    <div class="progress-bar-wrap" id="parse-progress"><div class="progress-bar" id="parse-bar"></div></div>
+  </div>
+
+  <!-- STEP 2: 確認/編輯資料 -->
+  <div class="step" id="step2" style="display:none">
+    <div class="step-title"><span class="step-num">2</span> 確認商品資料（可直接修改）</div>
+    <div class="table-wrap">
+      <table class="data-table" id="data-table">
+        <thead>
+          <tr>
+            <th>商品名稱</th>
+            <th>英文名稱</th>
+            <th>製造商</th>
+            <th>主要成分</th>
+            <th>主要用途</th>
+            <th>注意事項</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="data-tbody"></tbody>
+      </table>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="add-row-btn">＋ 新增一列</button>
+      <button class="btn btn-green" id="generate-btn">🖨️ 產出全部 PNG 標籤</button>
+      <button class="btn btn-excel" id="excel-btn">📊 下載 Excel</button>
+    </div>
+    <div class="status-box" id="gen-status"></div>
+    <div class="progress-bar-wrap" id="gen-progress"><div class="progress-bar" id="gen-bar"></div></div>
+  </div>
+
+  <!-- STEP 3: 下載 -->
+  <div class="step" id="step3" style="display:none">
+    <div class="step-title"><span class="step-num">3</span> 下載標籤 PNG</div>
+    <div id="output-grid"></div>
+  </div>
+
+</div>
+
+<script>
+// ===== API Key =====
+const API_KEY = "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";
+
+// ===== 固定資料 =====
+const FIXED = {
+  importer: "美林藝術文創股份有限公司",
+  ubn: "12707656",
+  address: "407臺中市西屯區潮洋里臺灣大道三段789號22樓之2",
+  phone: "04-22523711",
+  origin: "中國",
+  mfg: "詳見外包裝",
+  exp: "三年",
+  age: "3歲以上"
+};
+
+// ===== 檔案上傳 =====
+let uploadedFiles = [];
+const fileInput = document.getElementById('file-input');
+const previewArea = document.getElementById('preview-area');
+const parseBtn = document.getElementById('parse-btn');
+
+fileInput.addEventListener('change', e => {
+  [...e.target.files].forEach(addFile);
+});
+
+// drag & drop
+const zone = document.getElementById('upload-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.background='#dceeff'; });
+zone.addEventListener('dragleave', () => { zone.style.background=''; });
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.style.background='';
+  [...e.dataTransfer.files].forEach(addFile);
+});
+
+function addFile(file) {
+  if (!file.type.startsWith('image/')) return;
+  const id = Date.now() + Math.random();
+  uploadedFiles.push({ id, file });
+  const div = document.createElement('div');
+  div.className = 'preview-thumb';
+  div.dataset.id = id;
+  const img = document.createElement('img');
+  img.src = URL.createObjectURL(file);
+  const btn = document.createElement('button');
+  btn.className = 'remove-btn';
+  btn.textContent = '×';
+  btn.onclick = () => {
+    uploadedFiles = uploadedFiles.filter(f => f.id != id);
+    div.remove();
+    parseBtn.disabled = uploadedFiles.length === 0;
+  };
+  div.append(img, btn);
+  previewArea.appendChild(div);
+  parseBtn.disabled = false;
+}
+
+// ===== AI 解析 =====
+parseBtn.addEventListener('click', async () => {
+  if (uploadedFiles.length === 0) return;
+  const statusEl = document.getElementById('parse-status');
+  const progressWrap = document.getElementById('parse-progress');
+  const progressBar = document.getElementById('parse-bar');
+
+  parseBtn.disabled = true;
+  statusEl.className = 'status-box show';
+  statusEl.textContent = '🤖 正在解析照片，請稍候...';
+  progressWrap.className = 'progress-bar-wrap show';
+  progressBar.style.width = '10%';
+
+  try {
+    // 轉 base64
+    const images = await Promise.all(uploadedFiles.map(async ({file}) => {
+      const b64 = await toBase64(file);
+      return { type: "image", source: { type: "base64", media_type: file.type, data: b64 } };
+    }));
+    progressBar.style.width = '30%';
+
+    const systemPrompt = `你是商品標籤資料解析器。從圖片中提取商品資訊，回傳純 JSON 陣列，不要有任何其他文字或 markdown。
+格式：
+[
+  {
+    "name": "商品中文名稱",
+    "en": "英文名稱",
+    "maker": "製造商",
+    "ingredients": "主要成分",
+    "usage": "主要用途",
+    "note": "注意事項（沒有則空字串）"
+  }
+]
+若同一張圖有多件商品，全部列出。name 欄位若文字很長，在合適的語意斷點插入 <br> 讓標題換行好看。`;
+
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: "user", content: [...images, { type: "text", text: "請解析這些照片中的所有商品資料" }] }]
+      })
+    });
+
+    progressBar.style.width = '70%';
+    const data = await res.json();
+    const raw = data.content.find(b => b.type === 'text')?.text || '[]';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const products = JSON.parse(clean);
+
+    progressBar.style.width = '100%';
+    statusEl.className = 'status-box show success';
+    statusEl.textContent = `✅ 成功解析 ${products.length} 件商品，請確認下方資料是否正確`;
+
+    renderTable(products);
+    document.getElementById('step2').style.display = 'block';
+    document.getElementById('step2').scrollIntoView({ behavior: 'smooth' });
+
+  } catch(err) {
+    statusEl.className = 'status-box show error';
+    statusEl.textContent = '❌ 解析失敗：' + err.message;
+  } finally {
+    parseBtn.disabled = false;
+  }
+});
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+// ===== TABLE =====
+let tableData = [];
+
+function renderTable(products) {
+  tableData = products;
+  const tbody = document.getElementById('data-tbody');
+  tbody.innerHTML = '';
+  products.forEach((p, i) => addRow(p, i));
+}
+
+function addRow(p = {}, idx = null) {
+  if (idx === null) {
+    tableData.push(p);
+    idx = tableData.length - 1;
+  }
+  const tbody = document.getElementById('data-tbody');
+  const tr = document.createElement('tr');
+  tr.dataset.idx = idx;
+  const fields = ['name','en','maker','ingredients','usage','note'];
+  fields.forEach(f => {
+    const td = document.createElement('td');
+    const input = document.createElement('input');
+    input.value = p[f] || '';
+    input.dataset.field = f;
+    input.addEventListener('input', () => { tableData[idx][f] = input.value; });
+    td.appendChild(input);
+    tr.appendChild(td);
+  });
+  const tdDel = document.createElement('td');
+  const delBtn = document.createElement('button');
+  delBtn.className = 'del-row-btn';
+  delBtn.textContent = '🗑';
+  delBtn.onclick = () => { tableData.splice(idx, 1); tr.remove(); };
+  tdDel.appendChild(delBtn);
+  tr.appendChild(tdDel);
+  tbody.appendChild(tr);
+}
+
+document.getElementById('add-row-btn').addEventListener('click', () => {
+  addRow({name:'',en:'',maker:'',ingredients:'',usage:'',note:''});
+});
+
+// ===== 產出 PNG =====
+document.getElementById('generate-btn').addEventListener('click', async () => {
+  const products = tableData.filter(p => p.name);
+  if (products.length === 0) return;
+
+  const statusEl = document.getElementById('gen-status');
+  const progressWrap = document.getElementById('gen-progress');
+  const progressBar = document.getElementById('gen-bar');
+  const outputGrid = document.getElementById('output-grid');
+  outputGrid.innerHTML = '';
+
+  statusEl.className = 'status-box show';
+  statusEl.textContent = `🖨️ 正在產出 ${products.length} 張標籤...`;
+  progressWrap.className = 'progress-bar-wrap show';
+  document.getElementById('step3').style.display = 'block';
+
+  for (let i = 0; i < products.length; i++) {
+    progressBar.style.width = `${Math.round((i / products.length) * 100)}%`;
+    statusEl.textContent = `🖨️ 產出中 ${i+1} / ${products.length}：${products[i].name.replace('<br>','')}`;
+
+    const canvas = await renderLabel(products[i]);
+    const dataUrl = canvas.toDataURL('image/png');
+    const safeName = products[i].name.replace('<br>','').replace(/[\/\\]/g,'_');
+
+    // 顯示預覽
+    const div = document.createElement('div');
+    div.className = 'output-item';
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    const p = document.createElement('p');
+    p.textContent = products[i].name.replace('<br>','');
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `label_${String(i+1).padStart(2,'0')}_${safeName}.png`;
+    a.textContent = '⬇️ 下載';
+    div.append(img, p, a);
+    outputGrid.appendChild(div);
+  }
+
+  progressBar.style.width = '100%';
+  statusEl.className = 'status-box show success';
+  statusEl.textContent = `✅ 全部 ${products.length} 張產出完成！點擊各張圖片下方的「下載」儲存`;
+  document.getElementById('step3').scrollIntoView({ behavior: 'smooth' });
+});
+
+// ===== 繪製標籤 (Canvas) =====
+async function renderLabel(p) {
+  const W = 591, H_MAX = 1400;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H_MAX;
+  const ctx = canvas.getContext('2d');
+
+  const BG = '#eef6ff';
+  const BLUE = '#1a6faf';
+  const DASH_BLUE = '#5aaee0';
+  const PAD = 20;
+  const RADIUS = 22;
+
+  // 先量高度
+  ctx.clearRect(0, 0, W, H_MAX);
+
+  // 字型設定
+  const FONT = "'Microsoft JhengHei', Arial, sans-serif";
+  function setFont(size, bold=false) {
+    ctx.font = `${bold?'700 ':''}${size}px ${FONT}`;
+  }
+
+  // 標題行高
+  setFont(52, true);
+  const titleLines = splitTitle(ctx, p.name, W - PAD*2 - 20);
+  const titleH = titleLines.length * 68 + 30; // 行高68
+
+  // 計算資料列
+  const rows = buildRows(p);
+  setFont(22);
+  const rowH = 36;
+  const rowsH = rows.reduce((acc, r) => {
+    const lines = wrapText(ctx, r.val, W - PAD*2 - 16 - 150);
+    return acc + Math.max(1, lines.length) * rowH;
+  }, 0) + 24;
+
+  // 警告區高度
+  const warnH = 130;
+
+  const totalH = PAD + titleH + 16 + rowsH + 12 + warnH + PAD;
+  canvas.height = totalH;
+  ctx.clearRect(0, 0, W, totalH);
+
+  // 外框
+  roundRect(ctx, 2, 2, W-4, totalH-4, RADIUS);
+  ctx.fillStyle = BG;
+  ctx.fill();
+  ctx.strokeStyle = BLUE;
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  // 虛線內框
+  ctx.save();
+  ctx.setLineDash([8, 5]);
+  ctx.strokeStyle = DASH_BLUE;
+  ctx.lineWidth = 2;
+  roundRect(ctx, 10, 10, W-20, totalH-20, 16);
+  ctx.stroke();
+  ctx.restore();
+
+  // 標題
+  let y = PAD + 14;
+  ctx.fillStyle = BLUE;
+  ctx.textAlign = 'center';
+  titleLines.forEach(line => {
+    setFont(52, true);
+    y += 58;
+    ctx.fillText(line, W/2, y);
+  });
+  y += 20;
+
+  // 虛線分隔
+  ctx.save();
+  ctx.setLineDash([8, 5]);
+  ctx.strokeStyle = DASH_BLUE;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(W-PAD, y); ctx.stroke();
+  ctx.restore();
+  y += 12;
+
+  // 資料白底區塊
+  const infoTop = y;
+  const infoH = rowsH;
+  ctx.fillStyle = '#fff';
+  roundRect(ctx, PAD, infoTop, W-PAD*2, infoH, 12);
+  ctx.fill();
+
+  // 資料列
+  ctx.textAlign = 'left';
+  y = infoTop + 14;
+  const LBL_W = 110, COL_W = 20, VAL_X = PAD + 16 + LBL_W + COL_W;
+  const VAL_MAX_W = W - VAL_X - PAD - 16;
+
+  rows.forEach(r => {
+    setFont(22, true);
+    ctx.fillStyle = BLUE;
+    ctx.fillText(r.lbl, PAD + 16, y + 24);
+    ctx.fillText('：', PAD + 16 + LBL_W, y + 24);
+
+    setFont(22, false);
+    ctx.fillStyle = '#222';
+    const lines = wrapText(ctx, r.val, VAL_MAX_W);
+    lines.forEach((line, li) => {
+      ctx.fillText(line, VAL_X, y + 24 + li * rowH);
+    });
+    y += Math.max(1, lines.length) * rowH;
+  });
+
+  y = infoTop + infoH + 12;
+
+  // 警告白底
+  ctx.fillStyle = '#fff';
+  roundRect(ctx, PAD, y, W-PAD*2, warnH, 12);
+  ctx.fill();
+
+  // 警告文字
+  const wy = y + 14;
+  ctx.font = `700 28px ${FONT}`;
+  ctx.fillStyle = '#e05a00';
+  ctx.fillText('⚠️ 警告', PAD + 16, wy + 28);
+
+  // 分隔線
+  ctx.strokeStyle = '#bbb';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(PAD + 16 + 100, wy + 4);
+  ctx.lineTo(PAD + 16 + 100, wy + 56);
+  ctx.stroke();
+
+  setFont(19);
+  ctx.fillStyle = '#222';
+  ctx.fillText('・本產品不適合3歲以下兒童使用。', PAD + 16 + 110, wy + 22);
+  ctx.fillText('・請在成人監督下使用。', PAD + 16 + 110, wy + 48);
+
+  // 分隔線
+  const ageY = wy + 64;
+  ctx.strokeStyle = '#ddd';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(PAD + 16, ageY); ctx.lineTo(W - PAD - 16, ageY); ctx.stroke();
+
+  // 0-3 圖示
+  drawAgeIcon(ctx, PAD + 28, ageY + 10, 46);
+  setFont(19);
+  ctx.fillStyle = '#222';
+  ctx.fillText('不適合3歲以下', PAD + 16 + 60, ageY + 24);
+  ctx.fillText('兒童使用', PAD + 16 + 60, ageY + 46);
+
+  // 裁切到實際高度
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = W;
+  finalCanvas.height = totalH;
+  finalCanvas.getContext('2d').drawImage(canvas, 0, 0);
+  return finalCanvas;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, maxW) {
+  if (!text) return [''];
+  const words = text.split('');
+  let line = '', lines = [];
+  for (const ch of words) {
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxW && line) {
+      lines.push(line); line = ch;
+    } else { line = test; }
+  }
+  if (line) lines.push(line);
+  return lines.length ? lines : [''];
+}
+
+function splitTitle(ctx, name, maxW) {
+  // 支援 <br> 手動換行
+  const parts = name.split('<br>');
+  const lines = [];
+  parts.forEach(part => {
+    const wrapped = wrapText(ctx, part, maxW);
+    lines.push(...wrapped);
+  });
+  return lines;
+}
+
+function buildRows(p) {
+  const rows = [
+    { lbl: '英文名稱', val: p.en || '' },
+    { lbl: '製　造　商', val: p.maker || '' },
+    { lbl: '進　口　商', val: FIXED.importer },
+    { lbl: '統一編號', val: FIXED.ubn },
+    { lbl: '進口商地址', val: FIXED.address },
+    { lbl: '進口商電話', val: FIXED.phone },
+    { lbl: '原　產　地', val: FIXED.origin },
+    { lbl: '主要成分', val: p.ingredients || '' },
+    { lbl: '主要用途', val: p.usage || '' },
+    { lbl: '適用年齡', val: FIXED.age },
+    { lbl: '製造日期', val: FIXED.mfg },
+    { lbl: '有效期限', val: FIXED.exp },
+  ];
+  if (p.note) rows.push({ lbl: '注意事項', val: p.note });
+  return rows;
+}
+
+// ===== 匯出 Excel =====
+document.getElementById('excel-btn').addEventListener('click', () => {
+  const products = tableData.filter(p => p.name);
+  if (products.length === 0) { alert('請先解析或輸入商品資料'); return; }
+
+  const headers = ['商品名稱','英文名稱','製造商','進口商','統一編號','進口商地址','進口商電話','原產地','主要成分','主要用途','適用年齡','製造日期','有效期限','注意事項'];
+
+  const rows = products.map(p => [
+    p.name.replace('<br>',''),
+    p.en || '',
+    p.maker || '',
+    FIXED.importer,
+    FIXED.ubn,
+    FIXED.address,
+    FIXED.phone,
+    FIXED.origin,
+    p.ingredients || '',
+    p.usage || '',
+    FIXED.age,
+    FIXED.mfg,
+    FIXED.exp,
+    p.note || ''
+  ]);
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  // 欄寬
+  ws['!cols'] = [
+    {wch:20},{wch:30},{wch:30},{wch:20},{wch:12},
+    {wch:36},{wch:16},{wch:8},{wch:24},{wch:20},
+    {wch:10},{wch:12},{wch:10},{wch:24}
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, '商品資料');
+  const date = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `商品標籤資料_${date}.xlsx`);
+});
+
+  const cx = x + size/2, cy = y + size/2, r = size/2 - 1;
+  ctx.save();
+  ctx.fillStyle = '#dd0000';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#bb0000'; ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(cx - size*0.1, cy - size*0.15, size*0.1, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + size*0.1, size*0.2, size*0.14, 0, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#bb0000'; ctx.lineWidth = size*0.1;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - r*0.75, cy - r*0.75);
+  ctx.lineTo(cx + r*0.75, cy + r*0.75);
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${size*0.18}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.fillText('0-3', cx, cy + r*0.85);
+  ctx.restore();
+}
+</script>
+</body>
+</html>
