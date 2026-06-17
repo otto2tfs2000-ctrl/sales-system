@@ -1176,6 +1176,22 @@ async function syncToFirebase(silent=false) {
   }
   syncStatus = 'busy'; updateSyncDot();
   try {
+    // ── 防止多人同時寫入互相覆蓋（last-write-wins 競態條件）──
+    // 寫入前先讀取雲端目前最新的 records，與本機資料合併（以 id 為準，本機優先採用最新版本）
+    // 確保不會因為「我寫入時別人剛存的那筆還沒同步到我這邊」而把對方的資料蓋掉
+    const snap = await fbDb.ref('salesData/records').once('value');
+    const cloudRecords = snap.val() || [];
+    if (Array.isArray(cloudRecords) && cloudRecords.length > 0) {
+      const localIds = new Set(state.records.map(r => r.id));
+      // 雲端有、但本機沒有的記錄（代表是別人剛新增、我這邊還沒同步到的）→ 補回來
+      const missingFromCloud = cloudRecords.filter(r => r && r.id && !localIds.has(r.id));
+      if (missingFromCloud.length > 0) {
+        state.records = [...state.records, ...missingFromCloud];
+        retagRecordWeeks();
+        localStorage.setItem('salesRecords', JSON.stringify(state.records));
+      }
+    }
+
     await fbDb.ref('salesData').set({
       records: state.records,
       targets: monthTargets,
