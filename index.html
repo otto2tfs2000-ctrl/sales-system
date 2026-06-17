@@ -1192,6 +1192,15 @@ async function syncToFirebase(silent=false) {
       }
     }
 
+    // 同樣保護 dailyRevenue（2F Excel 匯入、4F/國圖每日手動登記）：
+    // 合併雲端與本機資料，本機（剛異動的）優先，避免監聽器的回音把剛存的覆蓋掉
+    const drSnap = await fbDb.ref('salesData/dailyRevenue').once('value');
+    const cloudDR = drSnap.val() || {};
+    if (cloudDR && typeof cloudDR === 'object') {
+      state.dailyRevenue = { ...cloudDR, ...state.dailyRevenue };
+      localStorage.setItem('dailyRevenue', JSON.stringify(state.dailyRevenue));
+    }
+
     // 安全防護：清除所有 undefined 欄位，避免 Firebase 拒絕寫入（undefined 不是合法的 JSON 值）
     const cleanUndefined = (obj) => JSON.parse(JSON.stringify(obj));
 
