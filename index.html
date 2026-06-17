@@ -1192,7 +1192,10 @@ async function syncToFirebase(silent=false) {
       }
     }
 
-    await fbDb.ref('salesData').set({
+    // 安全防護：清除所有 undefined 欄位，避免 Firebase 拒絕寫入（undefined 不是合法的 JSON 值）
+    const cleanUndefined = (obj) => JSON.parse(JSON.stringify(obj));
+
+    await fbDb.ref('salesData').set(cleanUndefined({
       records: state.records,
       targets: monthTargets,
       weekTargets: weekTargets,
@@ -1203,7 +1206,7 @@ async function syncToFirebase(silent=false) {
       dailyRevenue: state.dailyRevenue,
       settings: { invPrefixes: state.invPrefixes, anthropicKey: anthropicApiKey },
       updatedAt: Date.now()
-    });
+    }));
     syncStatus = 'live'; updateSyncDot();
     if (!silent) showToast('✓ 已同步至 Firebase（即時監聽中）');
     return true;
@@ -2963,7 +2966,7 @@ function addRecord() {
   if (!dept || amount <= 0) { showToast('請填寫部門與金額', true); return; }
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2,5);
   const pending = pay === '未入帳';
-  const rec = { id, month: state.month, day, dept, category, source, staff, customer, amount: finalAmount, pay, payDetail, invPrefix, invSuffix, note, week, voided: false, pending, hqInv: hqInv || undefined };
+  const rec = { id, month: state.month, day, dept, category, source, staff, customer, amount: finalAmount, pay, payDetail, invPrefix, invSuffix, note, week, voided: false, pending, hqInv: !!hqInv };
   if (hasSplit && (amount1 > 0 || amount2 > 0)) {
     rec.amount1 = amount1;
     rec.amount2 = amount2;
@@ -3159,7 +3162,7 @@ function saveEdit() {
   rec.pay = document.getElementById('e-pay').value;
   rec.payDetail = document.getElementById('e-paydetail').value.trim();
   rec.note = document.getElementById('e-note').value.trim();
-  rec.hqInv = document.getElementById('e-hq-inv')?.checked || undefined;
+  rec.hqInv = !!(document.getElementById('e-hq-inv')?.checked);
   rec.pending = document.getElementById('e-pending').value === '1';
   const a1 = parseFloat(document.getElementById('e-amount')?.value) || 0;
   if (rec.pay2) {
