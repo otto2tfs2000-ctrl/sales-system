@@ -1694,25 +1694,25 @@ function renderDaily() {
 
     // 並排顯示：現收 + 營收，字體大小一致
     const dualValue2f = `
-      <div style="display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap">
-        <div>
-          <div class="kpi-value">$${fmt(cashIncome2f)}</div>
-          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">現收</div>
+      <div style="display:flex;gap:32px;align-items:flex-end;flex-wrap:wrap">
+        <div style="border-left:3px solid var(--color-accent);padding-left:10px">
+          <div class="kpi-value" style="color:var(--color-accent)">$${fmt(cashIncome2f)}</div>
+          <div style="font-size:11px;color:var(--color-accent);margin-top:2px;font-weight:600">💰 現收</div>
         </div>
-        ${total2fImport>0?`<div>
-          <div class="kpi-value">$${fmt(total2fImport)}</div>
-          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">營收　${head2fImport}人次</div>
+        ${total2fImport>0?`<div style="border-left:3px solid var(--color-green);padding-left:10px">
+          <div class="kpi-value" style="color:var(--color-green)">$${fmt(total2fImport)}</div>
+          <div style="font-size:11px;color:var(--color-green);margin-top:2px;font-weight:600">📚 營收　<span style="color:var(--color-text-tertiary);font-weight:400">${head2fImport}人次</span></div>
         </div>`:''}
       </div>`;
     const dualValue4f = `
-      <div style="display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap">
-        <div>
-          <div class="kpi-value">$${fmt(cashIncome4f)}</div>
-          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">現收</div>
+      <div style="display:flex;gap:32px;align-items:flex-end;flex-wrap:wrap">
+        <div style="border-left:3px solid var(--color-accent);padding-left:10px">
+          <div class="kpi-value" style="color:var(--color-accent)">$${fmt(cashIncome4f)}</div>
+          <div style="font-size:11px;color:var(--color-accent);margin-top:2px;font-weight:600">💰 現收</div>
         </div>
-        ${total4fRev>0?`<div>
-          <div class="kpi-value">$${fmt(total4fRev)}</div>
-          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">營收　${head4fTotal}人次</div>
+        ${total4fRev>0?`<div style="border-left:3px solid var(--color-green);padding-left:10px">
+          <div class="kpi-value" style="color:var(--color-green)">$${fmt(total4fRev)}</div>
+          <div style="font-size:11px;color:var(--color-green);margin-top:2px;font-weight:600">📚 營收　<span style="color:var(--color-text-tertiary);font-weight:400">${head4fTotal}人次</span></div>
         </div>`:''}
       </div>`;
 
@@ -1744,14 +1744,14 @@ function renderDaily() {
     storeTarget = guotuTarget;
     const rateG = guotuTarget > 0 ? cashTotal / guotuTarget : null;
     const dualValueKg = `
-      <div style="display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap">
-        <div>
-          <div class="kpi-value">$${fmt(cashTotal)}</div>
-          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">現收</div>
+      <div style="display:flex;gap:32px;align-items:flex-end;flex-wrap:wrap">
+        <div style="border-left:3px solid var(--color-accent);padding-left:10px">
+          <div class="kpi-value" style="color:var(--color-accent)">$${fmt(cashTotal)}</div>
+          <div style="font-size:11px;color:var(--color-accent);margin-top:2px;font-weight:600">💰 現收</div>
         </div>
-        ${totalKgRev>0?`<div>
-          <div class="kpi-value">$${fmt(totalKgRev)}</div>
-          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">營收　${headKgTotal}人次</div>
+        ${totalKgRev>0?`<div style="border-left:3px solid var(--color-green);padding-left:10px">
+          <div class="kpi-value" style="color:var(--color-green)">$${fmt(totalKgRev)}</div>
+          <div style="font-size:11px;color:var(--color-green);margin-top:2px;font-weight:600">📚 營收　<span style="color:var(--color-text-tertiary);font-weight:400">${headKgTotal}人次</span></div>
         </div>`:''}
       </div>`;
     kpiCards = `
