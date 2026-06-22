@@ -2679,21 +2679,28 @@ function renderEntry() {
 
   // ── 跳號偵測：找出非總部發票中有效的後4碼，建立跳號佔位列 ──
   function buildGapRows(recs, invPrefix) {
-    // 收集所有非作廢、非總部、有後4碼的發票號碼
-    const invNums = recs
+    // 收集所有非總部、有後4碼的號碼（含作廢），作廢號碼佔住位置不觸發跳號提示
+    const allKnown = new Set(
+      recs
+        .filter(r => !r.hqInv && r.invSuffix && /^\d+$/.test(r.invSuffix.trim()))
+        .map(r => parseInt(r.invSuffix.trim(), 10))
+        .filter(n => !isNaN(n))
+    );
+    // 用於偵測連續性的號碼：只取非作廢的
+    const validNums = recs
       .filter(r => !r.hqInv && !r.voided && r.invSuffix && /^\d+$/.test(r.invSuffix.trim()))
       .map(r => parseInt(r.invSuffix.trim(), 10))
       .filter(n => !isNaN(n));
-    if (invNums.length < 2) return {};  // 少於兩筆無法偵測跳號
+    if (validNums.length < 2) return {};  // 少於兩筆無法偵測跳號
 
-    const sorted = [...new Set(invNums)].sort((a, b) => a - b);
-    const gapMap = {}; // { invNum: true } 代表這個號碼要插入佔位列
+    const sorted = [...new Set(validNums)].sort((a, b) => a - b);
+    const gapMap = {};
     for (let i = 0; i < sorted.length - 1; i++) {
       const diff = sorted[i + 1] - sorted[i];
       if (diff > 1 && diff <= 100) {
-        // 中間有跳號，且跳號數量 <= 100（超過視為發票本身跳號機制）
         for (let n = sorted[i] + 1; n < sorted[i + 1]; n++) {
-          gapMap[n] = true;
+          // 跳過已存在的號碼（含作廢），只標注真正缺少的
+          if (!allKnown.has(n)) gapMap[n] = true;
         }
       }
     }
