@@ -2677,6 +2677,47 @@ function renderEntry() {
     }
   }
 
+  // ── 跳號偵測：找出非總部發票中有效的後4碼，建立跳號佔位列 ──
+  function buildGapRows(recs, invPrefix) {
+    // 收集所有非作廢、非總部、有後4碼的發票號碼
+    const invNums = recs
+      .filter(r => !r.hqInv && !r.voided && r.invSuffix && /^\d+$/.test(r.invSuffix.trim()))
+      .map(r => parseInt(r.invSuffix.trim(), 10))
+      .filter(n => !isNaN(n));
+    if (invNums.length < 2) return {};  // 少於兩筆無法偵測跳號
+
+    const sorted = [...new Set(invNums)].sort((a, b) => a - b);
+    const gapMap = {}; // { invNum: true } 代表這個號碼要插入佔位列
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const diff = sorted[i + 1] - sorted[i];
+      if (diff > 1 && diff <= 100) {
+        // 中間有跳號，且跳號數量 <= 100（超過視為發票本身跳號機制）
+        for (let n = sorted[i] + 1; n < sorted[i + 1]; n++) {
+          gapMap[n] = true;
+        }
+      }
+    }
+    return gapMap;
+  }
+
+  // 建立跳號佔位 <tr>（灰色，只顯示完整發票號，其他欄位空白）
+  function buildGapRow(num, invPrefix) {
+    const padded = String(num).padStart(4, '0');
+    const fullNum = (invPrefix || prefix || '') + padded;
+    return `<tr style="opacity:0.45">
+      <td style="color:#9CA3AF">—</td>
+      <td style="color:#9CA3AF">—</td>
+      <td class="inv-col" style="color:#9CA3AF;font-style:italic">${fullNum} <span style="font-size:9px;background:#F3F4F6;color:#9CA3AF;padding:1px 5px;border-radius:8px;border:1px solid #E5E7EB">待補登</span></td>
+      <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+      <td></td><td></td><td></td>
+    </tr>`;
+  }
+
+  const gapMap = buildGapRows(allMonthRecs, prefix);
+
+  // 記錄上一筆的發票後4碼數字，依序插入跳號佔位列
+  const seenGaps = new Set(); // 避免重複插入
+
   let recRows = allMonthRecs.length === 0
     ? `<tr><td colspan="14" class="empty-state">尚無記錄</td></tr>`
     : allMonthRecs.map((r) => {
@@ -2686,6 +2727,16 @@ function renderEntry() {
       const voidBadge = r.voided ? ' <span class="badge badge-void">作廢</span>' : '';
       const pendingBadge = r.pending && !r.voided ? ' <span class="badge-pending"><span style="style="font-size:9px"">⚠</span> 未入帳</span>' : '';
       const hqBadge = r.hqInv ? ' <span style="font-size:9px;font-weight:700;background:#EDE9FE;color:#6D28D9;padding:1px 5px;border-radius:8px;border:1px solid #DDD6FE">🏢總部</span>' : '';
+
+      // 在這筆之前插入跳號佔位列（若有）
+      let gapPrefix = '';
+      if (!r.hqInv && !r.voided && r.invSuffix && /^\d+$/.test(r.invSuffix.trim())) {
+        const thisNum = parseInt(r.invSuffix.trim(), 10);
+        // 找出所有應在此之前（且還沒插過）的跳號
+        const before = Object.keys(gapMap).map(Number).filter(n => n < thisNum && !seenGaps.has(n)).sort((a,b)=>a-b);
+        before.forEach(n => { seenGaps.add(n); gapPrefix += buildGapRow(n, r.invPrefix || prefix); });
+      }
+
       const voidBtn = r.voided
         ? `<button class="void-btn" onclick="unvoidRec('${r.id}')" title="恢復"><span>↻</span></button>`
         : `<button class="void-btn" onclick="voidRec('${r.id}')" title="作廢發票"><span>🚫</span></button>`;
@@ -2710,7 +2761,7 @@ function renderEntry() {
 
       const rowClass = r.voided ? 'record-voided' : (r.pending ? 'record-pending' : (r.hqInv ? 'record-hq' : ''));
 
-      return `<tr class="${rowClass}">
+      return gapPrefix + `<tr class="${rowClass}">
         <td>${state.month}/${r.day}</td>
         <td>${r.dept||'—'}</td>
         <td class="inv-col">${fullInv}${voidBadge}${pendingBadge}${hqBadge}</td>
