@@ -3031,6 +3031,22 @@ function addRecord() {
   const REFUND_CATS = ['退費', '退款'];
   const finalAmount = REFUND_CATS.includes(category) ? -Math.abs(amount) : amount;
   if (!dept || amount <= 0) { showToast('請填寫部門與金額', true); return; }
+
+  // 發票重複防呆：若本月已有相同發票號碼（非總部發票、非作廢），跳出確認提示
+  if (invSuffix && !hqInv) {
+    const duplicate = state.records.find(r =>
+      r.month === state.month &&
+      !r.voided &&
+      !r.hqInv &&
+      r.invSuffix === invSuffix &&
+      (r.invPrefix || state.invPrefixes[state.month] || '') === invPrefix
+    );
+    if (duplicate) {
+      const fullInv = invPrefix + invSuffix;
+      const go = confirm(`⚠️ 發票號碼「${fullInv}」本月已有記錄\n（${duplicate.month}/${duplicate.day} ${duplicate.category} ${duplicate.customer || ''} $${duplicate.amount?.toLocaleString()}）\n\n確定還是要新增？`);
+      if (!go) return;
+    }
+  }
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2,5);
   const pending = pay === '未入帳';
   const rec = { id, month: state.month, day, dept, category, source, staff, customer, amount: finalAmount, pay, payDetail, invPrefix, invSuffix, note, week, voided: false, pending, hqInv: !!hqInv };
