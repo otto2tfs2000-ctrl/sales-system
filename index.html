@@ -2720,7 +2720,8 @@ function renderEntry() {
     </tr>`;
   }
 
-  const gapMap = buildGapRows(allMonthRecs, prefix);
+  // 只在「所有部門」時顯示跳號提示，單一部門篩選時不顯示
+  const gapMap = filter === '所有' ? buildGapRows(allMonthRecs, prefix) : {};
 
   // 記錄上一筆的發票後4碼數字，依序插入跳號佔位列
   const seenGaps = new Set(); // 避免重複插入
