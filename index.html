@@ -2242,6 +2242,11 @@ function renderWeekly() {
         : `<span style="color:var(--color-red);font-size:11px">尚差 $${fmt(-wDiff)}</span>`
       : '<span style="font-size:11px;color:var(--color-text-tertiary)">尚未設定週目標</span>';
 
+    // 月份目標 KPI（weekTargetCards 迴圈中需要）
+    const staffMonthTotal = filterRecs({ month: state.month, staff }).reduce((s,r)=>s+r.amount,0);
+    const monthTarget = tgt[staff] || 0;
+    const mRate = monthTarget > 0 ? staffMonthTotal / monthTarget : null;
+
     // 該業務「追蹤中」的 leads
     const staffLeads = Object.entries(leads).filter(([,l]) =>
       l.staff === staff && l.store === state.store && l.status === '追蹤中'
