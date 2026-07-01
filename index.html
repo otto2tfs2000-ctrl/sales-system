@@ -2054,17 +2054,22 @@ function renderWeekly() {
     // 2F：新單/續單 依 dept=2F 或方案類別判斷
     // 4F：新單金額 = source 為 新單/單次/活動；續單金額 = source 為 續單
     const NS_SOURCES = ['新單','單次','活動'];
+    const rfRecs  = recs.filter(r => REFUND_CATS.includes(r.category));
+    const pdRecs  = recs.filter(r => r.pending);
+
+    // 分類邏輯：每筆記錄只歸屬一個類別，優先順序：退款 > 營隊/活動 > 新單 > 續單 > 其他
+    // 4F/國圖：用 source 判斷新單/續單；但 category=營隊/活動 優先於 source 判斷
+    const yqRecs  = recs.filter(r => !rfRecs.includes(r) && CAMP_CATS.includes(r.category));
     const nsRecs  = recs.filter(r => {
+      if (rfRecs.includes(r) || yqRecs.includes(r)) return false;
       if (r.dept === '4F' || r.dept === '國圖') return NS_SOURCES.includes(r.source);
       return r.source === '新單' && (r.dept === '2F' || PLAN_CATS.includes(r.category));
     });
     const xuRecs  = recs.filter(r => {
+      if (rfRecs.includes(r) || yqRecs.includes(r) || nsRecs.includes(r)) return false;
       if (r.dept === '4F' || r.dept === '國圖') return r.source === '續單';
       return r.source === '續單' && (r.dept === '2F' || PLAN_CATS.includes(r.category));
     });
-    const yqRecs  = recs.filter(r => CAMP_CATS.includes(r.category));
-    const rfRecs  = recs.filter(r => REFUND_CATS.includes(r.category));
-    const pdRecs  = recs.filter(r => r.pending);
     const spRecs  = recs.filter(r =>
       !nsRecs.includes(r) && !xuRecs.includes(r) &&
       !yqRecs.includes(r) && !rfRecs.includes(r)
