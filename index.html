@@ -2086,7 +2086,8 @@ function renderWeekly() {
   for (const staff of staffList) {
     const recs = filterRecs({ month: state.month, week, staff });
     const st = calcStaffWeekStats(recs);
-    const weekTotal = st.nsAmt + st.xuAmt + st.yq + st.sp + st.rf; // rf 是負數，會自動扣
+    // 週合計直接用 filterRecs 加總，確保和 KPI 小卡一致（不依賴分類加總，避免漏計）
+    const weekTotal = recs.reduce((s,r)=>s+r.amount, 0);
     const staffMonthTotal = filterRecs({ month: state.month, staff }).reduce((s,r)=>s+r.amount,0);
     const monthTarget = tgt[staff] || 0;
     const mRate = monthTarget > 0 ? staffMonthTotal / monthTarget : null;
@@ -2208,6 +2209,10 @@ function renderWeekly() {
     const rateStr = rate !== null ? (rate*100).toFixed(1)+'%' : '—';
     const rateColor = rate === null ? 'var(--color-text-tertiary)' : rate >= 1 ? 'var(--color-green)' : rate >= 0.7 ? 'var(--color-amber)' : 'var(--color-red)';
 
+    // 月份業績細項（用同一套 calcStaffWeekStats 但傳整月記錄）
+    const monthRecs = filterRecs({ month: state.month, staff });
+    const mst = calcStaffWeekStats(monthRecs);
+
     staffCards += `
       <div class="month-card">
         <div class="month-hdr">
@@ -2224,6 +2229,16 @@ function renderWeekly() {
           <span style="font-size:20px;font-weight:800;color:${rateColor}">${rateStr}</span>
         </div>
         ${diffHtml?`<div style="text-align:right;margin-top:2px">${diffHtml}</div>`:''}
+        <div style="border-top:1px solid var(--color-border-light);margin-top:8px;padding-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px">
+          <div style="font-size:11px;color:var(--color-text-tertiary)">新單業績</div>
+          <div style="font-size:11px;text-align:right;font-weight:600">$${fmt(mst.nsAmt)}</div>
+          <div style="font-size:11px;color:var(--color-text-tertiary)">續單業績</div>
+          <div style="font-size:11px;text-align:right;font-weight:600">$${fmt(mst.xuAmt)}</div>
+          <div style="font-size:11px;color:var(--color-text-tertiary)">營隊/活動</div>
+          <div style="font-size:11px;text-align:right;font-weight:600">$${fmt(mst.yq)}</div>
+          <div style="font-size:11px;color:var(--color-text-tertiary)">商品/其他</div>
+          <div style="font-size:11px;text-align:right;font-weight:600">$${fmt(mst.sp)}</div>
+        </div>
       </div>`;
   }
 
