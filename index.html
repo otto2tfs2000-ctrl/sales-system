@@ -2051,8 +2051,17 @@ function renderWeekly() {
   // ── helper: 計算一組 records 的各欄數字 ──
   function calcStaffWeekStats(recs) {
     const tiRecs  = recs.filter(r => r.category && r.category.includes('體驗'));
-    const nsRecs  = recs.filter(r => r.source === '新單' && (r.dept==='2F' || PLAN_CATS.includes(r.category)));
-    const xuRecs  = recs.filter(r => r.source === '續單' && (r.dept==='2F' || PLAN_CATS.includes(r.category)));
+    // 2F：新單/續單 依 dept=2F 或方案類別判斷
+    // 4F：新單金額 = source 為 新單/單次/活動；續單金額 = source 為 續單
+    const NS_SOURCES = ['新單','單次','活動'];
+    const nsRecs  = recs.filter(r => {
+      if (r.dept === '4F' || r.dept === '國圖') return NS_SOURCES.includes(r.source);
+      return r.source === '新單' && (r.dept === '2F' || PLAN_CATS.includes(r.category));
+    });
+    const xuRecs  = recs.filter(r => {
+      if (r.dept === '4F' || r.dept === '國圖') return r.source === '續單';
+      return r.source === '續單' && (r.dept === '2F' || PLAN_CATS.includes(r.category));
+    });
     const yqRecs  = recs.filter(r => CAMP_CATS.includes(r.category));
     const rfRecs  = recs.filter(r => REFUND_CATS.includes(r.category));
     const pdRecs  = recs.filter(r => r.pending);
@@ -2269,12 +2278,30 @@ function renderWeekly() {
           </div>`).join('')}` : ''}`
       : `<div style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px">無體驗預約及追蹤中案件</div>`;
 
+    // 個人月份 KPI
+    const mRateStr = mRate !== null ? (mRate*100).toFixed(1)+'%' : '—';
+    const mRateColor = mRate === null ? 'var(--color-text-tertiary)' : mRate >= 1 ? 'var(--color-green)' : mRate >= 0.7 ? 'var(--color-amber)' : 'var(--color-red)';
+
     weekTargetCards += `
       <div class="week-target-card">
         <div class="week-target-hdr">
           <span class="week-target-name">${staff}</span>
           ${rateBadge(wRate)}
         </div>
+
+        <!-- 個人月份目標 KPI -->
+        <div style="background:var(--color-bg);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:8px;border:1px solid var(--color-border-light)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:11px;color:var(--color-text-tertiary);font-weight:600">📊 ${state.month}月月份目標</span>
+            <span style="font-size:14px;font-weight:800;color:${mRateColor}">${mRateStr}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--color-text-secondary)">
+            <span>目標 <strong style="color:var(--color-text-primary)">$${monthTarget>0?fmt(monthTarget):'未設定'}</strong></span>
+            <span>達成 <strong style="color:${mRateColor}">$${fmt(staffMonthTotal)}</strong></span>
+          </div>
+        </div>
+
+        <!-- 週目標 -->
         <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px">
           <span style="font-size:12px;color:var(--color-text-secondary);white-space:nowrap">週目標</span>
           <input type="number" class="week-target-input" value="${wTgt||''}" placeholder="輸入金額"
@@ -2288,6 +2315,7 @@ function renderWeekly() {
           <span>實際 <strong>$${fmt(wActual)}</strong></span>
           <span>${wDiffHtml}</span>
         </div>
+
         <div class="lead-mini-section">
           <div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);margin-bottom:4px;display:flex;justify-content:space-between">
             <span>🎯 追蹤中案件</span>
