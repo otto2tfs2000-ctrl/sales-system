@@ -2205,6 +2205,9 @@ function renderWeekly() {
         ? `<span style="color:var(--color-green);font-size:11px">超出 +$${fmt(diff)}</span>`
         : `<span style="color:var(--color-red);font-size:11px">剩餘 $${fmt(-diff)}</span>`
       : '';
+    const rateStr = rate !== null ? (rate*100).toFixed(1)+'%' : '—';
+    const rateColor = rate === null ? 'var(--color-text-tertiary)' : rate >= 1 ? 'var(--color-green)' : rate >= 0.7 ? 'var(--color-amber)' : 'var(--color-red)';
+
     staffCards += `
       <div class="month-card">
         <div class="month-hdr">
@@ -2212,12 +2215,15 @@ function renderWeekly() {
           ${rateBadge(rate)}
         </div>
         <div class="month-bar-wrap"><div class="month-bar" style="width:${barW}%;background:${rateBarColor(rate)}"></div></div>
-        <div class="month-detail">
-          <span>目標 <strong>$${fmt(target)}</strong></span>
-          <span>達成 $${fmt(achieved)}</span>
+        <div class="month-detail" style="margin-top:8px">
+          <span style="font-size:13px">目標 <strong style="font-size:15px">${target>0?'$'+fmt(target):'未設定'}</strong></span>
+          <span style="font-size:13px">達成 <strong style="font-size:15px;color:${rateColor}">$${fmt(achieved)}</strong></span>
         </div>
-        ${diffHtml?`<div style="margin-top:4px;text-align:right">${diffHtml}</div>`:''}
-        <div style="margin-top:6px;font-size:11px;color:var(--color-text-tertiary)">點「年度業績」頁修改目標</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <span style="font-size:11px;color:var(--color-text-tertiary)">點「年度業績」頁修改目標</span>
+          <span style="font-size:20px;font-weight:800;color:${rateColor}">${rateStr}</span>
+        </div>
+        ${diffHtml?`<div style="text-align:right;margin-top:2px">${diffHtml}</div>`:''}
       </div>`;
   }
 
@@ -2354,6 +2360,10 @@ function renderWeekly() {
     }</tbody><tfoot><tr><td colspan="5" style="text-align:right;font-weight:700;font-size:12px">待收合計</td><td style="font-weight:700;color:#BE185D;font-size:14px">$${fmt(pendingTotal)}</td><td colspan="2"></td></tr></tfoot></table>`;
 
   document.getElementById('tab-weekly').innerHTML = `
+    <div class="month-staff-section">
+      <div class="section-title"><span>🎯</span> ${state.month}月 個人月目標進度</div>
+      <div class="month-grid">${staffCards}</div>
+    </div>
     <div class="week-selector">${btnHtml}</div>
     <div class="table-wrap">
     <table class="staff-table">
@@ -2372,19 +2382,6 @@ function renderWeekly() {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    </div>
-    <div class="month-staff-section">
-      <div class="section-title" style="margin-top:8px"><span>🎯</span> ${state.month}月 個人月目標進度</div>
-      <div class="kpi-grid" style="margin-bottom:14px">
-        <div class="kpi-card"><div class="kpi-label">全館目標</div><div class="kpi-value">$${fmt(storeTarget)}</div></div>
-        <div class="kpi-card"><div class="kpi-label">實收合計</div><div class="kpi-value">$${fmt(storeTotal)}</div></div>
-        <div class="kpi-card"><div class="kpi-label">達成率</div><div class="kpi-value" style="color:${rateColor(storeRate)}">${fmtRate(storeRate)}</div></div>
-      </div>
-      <div style="padding:12px 16px;border-radius:var(--radius-md);border:1px solid var(--color-border);background:var(--color-surface);margin-bottom:14px">
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="font-weight:500">全館進度</span><span style="color:${rateColor(storeRate)};font-weight:600">${fmtRate(storeRate)}</span></div>
-        <div class="month-bar-wrap" style="height:8px"><div class="month-bar" style="width:${sBarW}%;background:${rateBarColor(storeRate)}"></div></div>
-      </div>
-      <div class="month-grid">${staffCards}</div>
     </div>
     <div class="section-title" style="margin-top:8px"><span>📊</span> ${week} 個人週目標進度</div>
     <div class="week-target-grid">${weekTargetCards}</div>
