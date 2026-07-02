@@ -969,6 +969,7 @@ let fbDb = null;
 let fbListener = null; // active realtime listener
 let fbSalaryListener = null; // listener for salaryData/daily (4F 成人登記)
 let fbInitialSyncDone = false; // listener 是否已收到第一次完整資料（避免空值覆蓋雲端）
+const deletedIds = new Set(); // 記錄刻意刪除的 id，防止合併保護把刪除的記錄救回來
 
 function initFirebase(config) {
   try {
@@ -1184,7 +1185,7 @@ async function syncToFirebase(silent=false) {
     if (Array.isArray(cloudRecords) && cloudRecords.length > 0) {
       const localIds = new Set(state.records.map(r => r.id));
       // 雲端有、但本機沒有的記錄（代表是別人剛新增、我這邊還沒同步到的）→ 補回來
-      const missingFromCloud = cloudRecords.filter(r => r && r.id && !localIds.has(r.id));
+      const missingFromCloud = cloudRecords.filter(r => r && r.id && !localIds.has(r.id) && !deletedIds.has(r.id));
       if (missingFromCloud.length > 0) {
         state.records = [...state.records, ...missingFromCloud];
         retagRecordWeeks();
@@ -2747,7 +2748,7 @@ function renderEntry() {
     const gapMap = {};
     for (let i = 0; i < sorted.length - 1; i++) {
       const diff = sorted[i + 1] - sorted[i];
-      if (diff > 1 && diff <= 100) {
+      if (diff > 1 && diff <= 10) {
         for (let n = sorted[i] + 1; n < sorted[i + 1]; n++) {
           // 跳過已存在的號碼（含作廢），只標注真正缺少的
           if (!allKnown.has(n)) gapMap[n] = true;
@@ -3132,6 +3133,7 @@ function deleteRec(id) {
   if (!confirm('確定刪除此筆記錄？')) return;
   const idx = state.records.findIndex(r => r.id === id);
   if (idx === -1) { showToast('找不到記錄', true); return; }
+  deletedIds.add(id); // 記住這筆是刻意刪除的，防止合併保護救回來
   state.records.splice(idx, 1);
   save();
   renderAll();
