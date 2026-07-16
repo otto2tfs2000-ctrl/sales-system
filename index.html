@@ -1577,11 +1577,23 @@ async function import2fExcel(file, month) {
       day = parseInt(m[3]);
     } else continue;
 
-    // 解析出席人數：格式 "4 / 6"
-    const attStr = String(row[idxAtt] || '');
+    // 支援兩種格式：
+    // 舊格式：出席狀態 = "4 / 6"（已出席/總人數），每列=每堂課
+    // 新格式：出席狀態 = "是"/"否"（是=缺席，否=出席），每列=每位學生
+    const attStr = String(row[idxAtt] || '').trim();
+    let attended = 0;
     const attM = attStr.match(/(\d+)\s*\/\s*(\d+)/);
-    const attended = attM ? parseInt(attM[1]) : 0;
-    if (attended === 0) continue; // 0人出席跳過
+    if (attM) {
+      // 舊格式：抓已出席人數
+      attended = parseInt(attM[1]);
+    } else if (attStr === '否') {
+      // 新格式：「否」= 未缺席 = 有出席，計1人
+      attended = 1;
+    } else {
+      // 「是」= 缺席，或其他未知值，跳過
+      continue;
+    }
+    if (attended === 0) continue;
 
     const income = parseFloat(row[idxInc]) || 0;
     const course = String(row[idxCourse] || '');
@@ -3324,15 +3336,39 @@ function downloadMonthExcel() {
     .filter(r => r.month === state.month)
     .slice().sort((a,b) => (a.invSuffix||'9999').localeCompare(b.invSuffix||'9999', undefined, {numeric:true}));
 
-  // Build CSV
-  const headers = ['日期','部門','發票號','購買種類','客戶來源','業務','客戶','金額','訂金','尾款','付款方式','付款補充','尾款方式','尾款補充','備註','未入帳','作廢','週別'];
+  // 每個付款方式各一欄，金額正確拆分（訂金/尾款各歸各的付款方式）
+  const PAY_COLS = PAY_METHODS;
+
+  const headers = [
+    '日期','部門','發票號','購買種類','客戶來源','業務','客戶','金額',
+    '付款方式','付款補充','尾款方式','尾款補充',
+    ...PAY_COLS,  // 各付款方式金額欄
+    '備註','未入帳','作廢','週別'
+  ];
+
   const rows = recs.map(r => {
-    const inv = r.invSuffix ? (r.invPrefix || prefix) + r.invSuffix : '';
+    const inv = r.hqInv ? r.invSuffix : (r.invSuffix ? (r.invPrefix || prefix) + r.invSuffix : '');
+
+    // 計算每個付款方式的實際金額
+    const payAmts = {};
+    PAY_COLS.forEach(p => payAmts[p] = 0);
+
+    if (r.pay2) {
+      // 拆分付款：訂金歸 pay，尾款歸 pay2
+      const amt1 = r.amount1 != null ? r.amount1 : r.amount;
+      const amt2 = r.amount2 != null ? r.amount2 : 0;
+      if (r.pay && payAmts[r.pay] !== undefined) payAmts[r.pay] += amt1;
+      if (r.pay2 && payAmts[r.pay2] !== undefined) payAmts[r.pay2] += amt2;
+    } else {
+      // 單一付款：全額歸 pay
+      if (r.pay && payAmts[r.pay] !== undefined) payAmts[r.pay] += (r.amount || 0);
+    }
+
     return [
       `${r.month}/${r.day}`, r.dept||'', inv, r.category||'', r.source||'',
       r.staff||'', r.customer||'', r.amount||0,
-      r.amount1||'', r.amount2||'',
       r.pay||'', r.payDetail||'', r.pay2||'', r.payDetail2||'',
+      ...PAY_COLS.map(p => payAmts[p] || ''),
       r.note||'', r.pending?'是':'', r.voided?'是':'', r.week||''
     ];
   });
