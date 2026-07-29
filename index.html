@@ -220,6 +220,36 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 .staff-progress { width: 100%; height: 3px; background: var(--color-border); border-radius: 2px; overflow: hidden; }
 .staff-progress-bar { height: 100%; border-radius: 2px; }
 
+/* ── 會員方案追蹤 ── */
+.mem-toolbar { display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px; }
+.mem-toolbar select,.mem-toolbar input { font-size:13px;padding:5px 10px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text-primary); }
+.mem-group { margin-bottom:18px; }
+.mem-group-hdr { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:8px 12px;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);margin-bottom:8px; }
+.mem-group-title { font-weight:700;font-size:13px; }
+.mem-group-meta { font-size:11px;color:var(--color-text-tertiary); }
+.mem-table { width:100%;border-collapse:collapse;font-size:12.5px; }
+.mem-table th { padding:7px 8px;text-align:left;font-weight:600;font-size:11px;color:var(--color-text-secondary);background:var(--color-bg);border-bottom:1px solid var(--color-border);white-space:nowrap; }
+.mem-table td { padding:7px 8px;border-bottom:1px solid var(--color-border-light);vertical-align:middle; }
+.mem-table tr:hover td { background:var(--color-bg); }
+.mem-status-badge { font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;display:inline-block; }
+.mem-status-進行中 { background:var(--color-green-bg);color:var(--color-green); }
+.mem-status-待續約 { background:var(--color-amber-bg);color:var(--color-amber); }
+.mem-status-已無方案 { background:#FEE2E2;color:var(--color-red); }
+.mem-status-未設定 { background:var(--color-bg);color:var(--color-text-tertiary); }
+.mem-status-體驗生 { background:#EDE9FE;color:#7C3AED; }
+.mem-status-已轉正 { background:var(--color-green-bg);color:var(--color-green); }
+.mem-status-已放棄 { background:#F3F4F6;color:#6B7280; }
+.mem-input-sm { width:44px;font-size:12px;padding:3px 4px;text-align:center;border:1px solid var(--color-border);border-radius:4px;background:var(--color-bg);color:var(--color-text-primary); }
+.mem-amt-input { width:68px;font-size:12px;padding:3px 5px;border:1px solid var(--color-border);border-radius:4px;background:var(--color-bg);color:var(--color-text-primary); }
+.mem-note-input { width:100%;min-width:100px;font-size:12px;padding:3px 5px;border:1px solid var(--color-border);border-radius:4px;background:var(--color-bg);color:var(--color-text-primary); }
+.mem-btn { font-size:11px;padding:3px 8px;border-radius:var(--radius-sm);border:1px solid var(--color-border);background:var(--color-bg);cursor:pointer;color:var(--color-text-secondary); }
+.mem-btn:hover { background:var(--color-border); }
+.mem-btn.red { border-color:var(--color-red);color:var(--color-red); }
+.mem-btn.purple { border-color:#7C3AED;color:#7C3AED; }
+.mem-btn.green { border-color:var(--color-green);color:var(--color-green); }
+.mem-empty { text-align:center;padding:40px;color:var(--color-text-tertiary);font-size:14px; }
+.mem-gift-tag { font-size:10px;padding:1px 6px;border-radius:8px;background:var(--color-amber-bg);color:var(--color-amber);white-space:nowrap; }
+
 /* ── Badges ── */
 .badge { display: inline-block; padding: 3px 8px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 600; }
 .badge-green { background: var(--color-green-bg); color: var(--color-green); }
@@ -519,6 +549,7 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
   <div class="nav-tab" onclick="switchTab('annual',this)">年度業績</div>
   <div class="nav-tab" onclick="switchTab('leads',this)">追單管理</div>
   <div class="nav-tab" onclick="switchTab('appt',this)">體驗預約</div>
+  <div class="nav-tab" onclick="switchTab('membership',this)">方案追蹤</div>
 </div>
 
 <!-- Tab Contents -->
@@ -529,6 +560,7 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 <div id="tab-annual" class="tab-content"></div>
 <div id="tab-leads" class="tab-content"></div>
 <div id="tab-appt" class="tab-content"></div>
+<div id="tab-membership" class="tab-content"></div>
 
 <!-- Staff Management Modal -->
 <div class="modal-overlay" id="staff-modal">
@@ -719,6 +751,124 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       <button class="btn-secondary" onclick="closeApptModal()">取消</button>
       <button class="btn-primary" onclick="saveAppt()">✓ 儲存預約</button>
+    </div>
+  </div>
+</div>
+
+<!-- 會員方案追蹤 Modal -->
+<div class="appt-modal-overlay" id="mem-modal">
+  <div class="appt-modal">
+    <div class="appt-modal-title" id="mem-modal-title">📚 新增方案池</div>
+    <div class="appt-form-grid">
+      <div class="appt-form-group">
+        <label>部門</label>
+        <select id="mem-dept"></select>
+      </div>
+      <div class="appt-form-group">
+        <label>家長帳號 *</label>
+        <input id="mem-parent" type="text" placeholder="家長姓名（同 Omcean 會員欄位）">
+      </div>
+      <div class="appt-form-group">
+        <label>類別（小象/大象...）*</label>
+        <input id="mem-category" type="text" placeholder="小象 / 大象" list="mem-category-list">
+        <datalist id="mem-category-list"></datalist>
+      </div>
+      <div class="appt-form-group">
+        <label>目前方案代號</label>
+        <input id="mem-package" type="text" placeholder="小象48" list="mem-package-list">
+        <datalist id="mem-package-list"></datalist>
+      </div>
+      <div class="appt-form-group full">
+        <label>孩子清單（多位用「、」分隔，代表共用此方案池）</label>
+        <input id="mem-students" type="text" placeholder="例：劉沐希、劉沐恩">
+      </div>
+      <div class="appt-form-group">
+        <label>總堂數</label>
+        <input id="mem-total" type="number" min="0" placeholder="例如 48">
+      </div>
+      <div class="appt-form-group">
+        <label>已用堂數（基準）</label>
+        <input id="mem-used" type="number" min="0" placeholder="例如 12">
+      </div>
+      <div class="appt-form-group">
+        <label>待收金額</label>
+        <input id="mem-amount" type="number" min="0" placeholder="0">
+      </div>
+      <div class="appt-form-group">
+        <label>是否體驗生</label>
+        <div style="display:flex;gap:16px;align-items:center;padding:6px 0">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;font-size:13px">
+            <input type="radio" name="mem-trial" id="mem-trial-no" value="0" checked>
+            <span>一般會員</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;font-size:13px">
+            <input type="radio" name="mem-trial" id="mem-trial-yes" value="1">
+            <span style="color:#7C3AED;font-weight:600">體驗生</span>
+          </label>
+        </div>
+      </div>
+      <div class="appt-form-group full">
+        <label>贈品 / 其他狀態</label>
+        <input id="mem-gift" type="text" placeholder="贈品還在櫃台 / 已領取">
+      </div>
+      <div class="appt-form-group full">
+        <label>備註</label>
+        <textarea id="mem-note" rows="2" placeholder="其他備註..."></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn-secondary" onclick="closeMemModal()">取消</button>
+      <button class="btn-primary" onclick="saveMemModal()">✓ 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 方案代號對照表 Modal -->
+<div class="appt-modal-overlay" id="pkgtable-modal">
+  <div class="appt-modal" style="max-width:560px">
+    <div class="appt-modal-title">🗂️ 方案代號對照表</div>
+    <div style="font-size:12px;color:var(--color-text-tertiary);margin-bottom:10px">
+      用於出席匯入的異動偵測，以及流水帳新購課的堂數／類別自動判斷。客製化堂數的少數個案可在確認時手動修正，不影響這張表。
+    </div>
+    <div class="table-wrap" style="max-height:320px;overflow-y:auto">
+      <table class="mem-table" id="pkgtable-body-wrap">
+        <thead><tr><th>代號</th><th>堂數</th><th>類別</th><th></th></tr></thead>
+        <tbody id="pkgtable-body"></tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input id="pkg-new-code" type="text" placeholder="代號，例：小象60" style="flex:1;font-size:13px;padding:6px 8px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-bg)">
+      <input id="pkg-new-sessions" type="number" min="0" placeholder="堂數" style="width:80px;font-size:13px;padding:6px 8px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-bg)">
+      <input id="pkg-new-category" type="text" placeholder="類別" style="width:90px;font-size:13px;padding:6px 8px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-bg)">
+      <button class="mem-btn green" onclick="addPkgTableRow()">＋新增</button>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn-secondary" onclick="closePkgTableModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 出席匯入結果 Modal -->
+<div class="appt-modal-overlay" id="attend-import-modal">
+  <div class="appt-modal" style="max-width:640px">
+    <div class="appt-modal-title">📥 出席表匯入結果</div>
+    <div id="attend-import-summary" style="font-size:13px;line-height:1.8;margin-bottom:12px"></div>
+    <div id="attend-import-review" style="max-height:360px;overflow-y:auto"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn-primary" onclick="closeAttendImportModal()">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 流水帳新購課 → 方案池 確認 Modal -->
+<div class="appt-modal-overlay" id="salespool-modal">
+  <div class="appt-modal" style="max-width:560px">
+    <div class="appt-modal-title">⚠️ 偵測到「方案/入會」新增</div>
+    <div id="salespool-body" style="font-size:13px;line-height:1.9"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn-secondary" onclick="closeSalesPoolModal()">略過</button>
+      <button class="mem-btn" onclick="openMemModalFromSales()">✏️ 手動處理</button>
+      <button class="btn-primary" onclick="confirmSalesPoolMatch()">✓ 確認寫入</button>
     </div>
   </div>
 </div>
@@ -948,6 +1098,16 @@ let weekTargets = JSON.parse(localStorage.getItem('weekTargets') || '{}');
 let leads = JSON.parse(localStorage.getItem('leads') || '{}');
 // 體驗預約：{ id: { store,dept,parentName,phone,childName,childBirth,subject,appointDate,appointTime,staff,status,note,leadId,createdAt } }
 let appointments = JSON.parse(localStorage.getItem('appointments') || '{}');
+let membershipPools = JSON.parse(localStorage.getItem('membershipPools') || '{}');
+let packageCodeTable = JSON.parse(localStorage.getItem('packageCodeTable') || 'null') || {
+  '小象30': { sessions: 30, category: '小象' },
+  '小象48': { sessions: 48, category: '小象' },
+  '小象96': { sessions: 96, category: '小象' },
+  '大象30': { sessions: 30, category: '大象' },
+  '大象48': { sessions: 48, category: '大象' },
+  '大象96': { sessions: 96, category: '大象' }
+};
+let attendanceSeenKeys = JSON.parse(localStorage.getItem('attendanceSeenKeys') || '{}');
 
 let gsConfig = JSON.parse(localStorage.getItem('gsConfig') || 'null') || { url: '', name: '業績資料' };
 // Firebase 設定（已內建，開啟即自動連線）
@@ -1031,7 +1191,19 @@ function startFirebaseListener() {
       appointments = data.appointments;
       changed = true;
     }
-    // 注意：若 data.appointments 不存在，保留本機現有資料，不清空（避免資料遺失）
+    if (data.membershipPools) {
+      membershipPools = data.membershipPools;
+      changed = true;
+    }
+    if (data.packageCodeTable) {
+      packageCodeTable = data.packageCodeTable;
+      changed = true;
+    }
+    if (data.attendanceSeenKeys) {
+      attendanceSeenKeys = data.attendanceSeenKeys;
+      changed = true;
+    }
+    // 注意：若對應欄位不存在，保留本機現有資料，不清空（避免資料遺失）
     fbInitialSyncDone = true;
     if (changed) {
       retagRecordWeeks();
@@ -1126,6 +1298,9 @@ function save() {
   localStorage.setItem('weekTargets', JSON.stringify(weekTargets));
   localStorage.setItem('leads', JSON.stringify(leads));
   localStorage.setItem('appointments', JSON.stringify(appointments));
+  localStorage.setItem('membershipPools', JSON.stringify(membershipPools));
+  localStorage.setItem('packageCodeTable', JSON.stringify(packageCodeTable));
+  localStorage.setItem('attendanceSeenKeys', JSON.stringify(attendanceSeenKeys));
     localStorage.setItem('invPrefixes', JSON.stringify(state.invPrefixes));
     localStorage.setItem('monthStaff', JSON.stringify(monthStaff));
     localStorage.setItem('manual2fRevenue', JSON.stringify(state.manual2fRevenue));
@@ -1211,6 +1386,9 @@ async function syncToFirebase(silent=false) {
       weekTargets: weekTargets,
       leads: leads,
       appointments: appointments,
+      membershipPools: membershipPools,
+      packageCodeTable: packageCodeTable,
+      attendanceSeenKeys: attendanceSeenKeys,
       manualStats: state.manualStats,
       monthStaff: monthStaff,
       dailyRevenue: state.dailyRevenue,
@@ -1241,6 +1419,9 @@ async function loadFromSheets(silent=false) {
     if (data.weekTargets) weekTargets = data.weekTargets;
     if (data.leads) leads = data.leads;
     if (data.appointments) appointments = data.appointments;
+    if (data.membershipPools) membershipPools = data.membershipPools;
+    if (data.packageCodeTable) packageCodeTable = data.packageCodeTable;
+    if (data.attendanceSeenKeys) attendanceSeenKeys = data.attendanceSeenKeys;
     if (data.manualStats) Object.assign(state.manualStats, data.manualStats);
     if (data.monthStaff) Object.assign(monthStaff, data.monthStaff);
     if (data.settings && data.settings.invPrefixes) Object.assign(state.invPrefixes, data.settings.invPrefixes);
@@ -3139,6 +3320,9 @@ function addRecord() {
   renderAll();
   showToast('✓ 已新增記錄');
   if (fbDb) setTimeout(() => syncToFirebase(true), 500);
+  if (rec.category === '方案/入會') {
+    setTimeout(() => tryLinkSalesEntryToPool(rec), 300);
+  }
 }
 
 function deleteRec(id) {
@@ -3436,6 +3620,7 @@ function switchTab(name, el) {
   else if (name==='consumption') renderConsumption();
   else if (name==='leads') renderLeads();
   else if (name==='appt') renderAppt();
+  else if (name==='membership') renderMembership();
 }
 function changeMonth(m) {
   state.month = parseInt(m);
@@ -3520,6 +3705,7 @@ function renderAll() {
   else if (id==='consumption') renderConsumption();
   else if (id==='leads') renderLeads();
   else if (id==='appt') renderAppt();
+  else if (id==='membership') renderMembership();
 }
 
 // ══════════════════════════════════════
@@ -4563,9 +4749,12 @@ function renderAppt() {
   const deptOpts = ['全部','2F','4F'].map(d=>
     `<option value="${d}" ${apptDeptFilter===d?'selected':''}>${d}</option>`).join('');
 
+  const currentMonthStr = todayStr.slice(0,7); // 'YYYY-MM'
   let filtered = storeAppts.filter(([,a]) => {
     if (apptDeptFilter !== '全部' && a.dept !== apptDeptFilter) return false;
     if (apptStatusFilter !== '全部' && a.status !== apptStatusFilter) return false;
+    // 只顯示當月的預約
+    if (!a.appointDate || a.appointDate.slice(0,7) !== currentMonthStr) return false;
     return true;
   }).sort((a,b) => (a[1].appointDate+a[1].appointTime) > (b[1].appointDate+b[1].appointTime) ? 1 : -1);
 
@@ -4633,6 +4822,543 @@ function addLeadFromPage() {
   const staffSel = staffList.length === 1 ? staffList[0] : prompt('業務姓名（' + staffList.join('／') + '）：');
   if (!staffSel || !staffList.includes(staffSel)) { showToast('請輸入正確的業務姓名', true); return; }
   addLead(staffSel);
+}
+
+// ══════════════════════════════════════
+//  會員方案追蹤 (Membership Pool Tracking)
+// ══════════════════════════════════════
+let memFilter = { category: '全部', status: '全部', keyword: '' };
+let memEditingId = null; // 目前 modal 編輯中的 id（null = 新增）
+let salesPoolCandidate = null; // 流水帳觸發比對時暫存的候選資料
+
+function genPoolId() { return 'pool_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
+
+// 依剩餘堂數 / 體驗狀態計算顯示狀態
+function computePoolStatus(p) {
+  if (p.needsReview) return { key: '待確認', label: '⚠️ 待確認基準' };
+  if (p.anomalyNote) return { key: '待確認', label: '⚠️ 偵測到異動' };
+  if (p.isTrial) {
+    if (p.trialResult === '已轉正') return { key: '已轉正', label: '✓ 已轉正' };
+    if (p.trialResult === '已放棄') return { key: '已放棄', label: '✗ 已放棄' };
+    return { key: '體驗生', label: '體驗生' };
+  }
+  const total = Number(p.totalSessions);
+  const used = Number(p.usedSessions || 0);
+  if (!total || isNaN(total)) return { key: '未設定', label: '未設定' };
+  const remaining = total - used;
+  if (remaining <= 0) return { key: '已無方案', label: '已無方案' };
+  if (remaining <= 2) return { key: '待續約', label: `剩 ${remaining} 堂` };
+  return { key: '進行中', label: `剩 ${remaining} 堂` };
+}
+function poolRemaining(p) {
+  const total = Number(p.totalSessions);
+  if (!total || isNaN(total)) return null;
+  return total - Number(p.usedSessions || 0);
+}
+
+function savePool(id, data) {
+  membershipPools[id] = { ...membershipPools[id], ...data, updatedAt: Date.now() };
+  save(); syncToFirebase(true);
+}
+function deletePool(id) {
+  if (!confirm('確定刪除此方案池？（累積的出席比對紀錄不會被刪除，僅移除方案池本身）')) return;
+  delete membershipPools[id];
+  save(); syncToFirebase(true);
+  renderMembership();
+}
+function quickUpdatePoolField(id, field, val) {
+  const numeric = ['totalSessions','usedSessions','amountDue'];
+  const v = numeric.includes(field) ? (val === '' ? null : Number(val)) : val;
+  savePool(id, { [field]: v });
+  renderMembership();
+}
+function setPoolTrialResult(id, result) {
+  savePool(id, { trialResult: result });
+  renderMembership();
+}
+function acknowledgePoolReview(id) {
+  savePool(id, { needsReview: false, anomalyNote: '' });
+  renderMembership();
+  showToast('✓ 已確認基準');
+}
+
+function openMemModal(id) {
+  memEditingId = id || null;
+  const deptSel = document.getElementById('mem-dept');
+  deptSel.innerHTML = getDepts().map(d=>`<option value="${d}">${d}</option>`).join('');
+  const catList = document.getElementById('mem-category-list');
+  const cats = [...new Set(Object.values(packageCodeTable).map(v=>v.category))];
+  catList.innerHTML = cats.map(c=>`<option value="${c}">`).join('');
+  const pkgList = document.getElementById('mem-package-list');
+  pkgList.innerHTML = Object.keys(packageCodeTable).map(c=>`<option value="${c}">`).join('');
+
+  if (id && membershipPools[id]) {
+    const p = membershipPools[id];
+    document.getElementById('mem-modal-title').textContent = '✏️ 編輯方案池';
+    deptSel.value = p.dept || getDepts()[0];
+    document.getElementById('mem-parent').value = p.parent || '';
+    document.getElementById('mem-category').value = p.category || '';
+    document.getElementById('mem-package').value = p.packageCode || '';
+    document.getElementById('mem-students').value = (p.students||[]).map(s=>s.name).join('、');
+    document.getElementById('mem-total').value = (p.totalSessions ?? '');
+    document.getElementById('mem-used').value = (p.usedSessions ?? '');
+    document.getElementById('mem-amount').value = (p.amountDue ?? '');
+    document.getElementById('mem-trial-yes').checked = !!p.isTrial;
+    document.getElementById('mem-trial-no').checked = !p.isTrial;
+    document.getElementById('mem-gift').value = p.giftStatus || '';
+    document.getElementById('mem-note').value = p.note || '';
+  } else {
+    document.getElementById('mem-modal-title').textContent = '📚 新增方案池';
+    deptSel.value = getDepts()[0];
+    document.getElementById('mem-parent').value = '';
+    document.getElementById('mem-category').value = '';
+    document.getElementById('mem-package').value = '';
+    document.getElementById('mem-students').value = '';
+    document.getElementById('mem-total').value = '';
+    document.getElementById('mem-used').value = '';
+    document.getElementById('mem-amount').value = '';
+    document.getElementById('mem-trial-no').checked = true;
+    document.getElementById('mem-trial-yes').checked = false;
+    document.getElementById('mem-gift').value = '';
+    document.getElementById('mem-note').value = '';
+  }
+  document.getElementById('mem-modal').classList.add('open');
+}
+function closeMemModal() {
+  document.getElementById('mem-modal').classList.remove('open');
+  memEditingId = null;
+}
+function saveMemModal() {
+  const parent = document.getElementById('mem-parent').value.trim();
+  const category = document.getElementById('mem-category').value.trim();
+  if (!parent || !category) { showToast('請填寫家長帳號與類別', true); return; }
+  const isTrial = document.getElementById('mem-trial-yes').checked;
+  const studentsRaw = document.getElementById('mem-students').value.trim();
+  const students = studentsRaw ? studentsRaw.split(/[、,，]/).map(s=>s.trim()).filter(Boolean).map(name=>({name, shared: true})) : [];
+  const totalRaw = document.getElementById('mem-total').value;
+  const usedRaw = document.getElementById('mem-used').value;
+  const amountRaw = document.getElementById('mem-amount').value;
+  const data = {
+    store: state.store,
+    dept: document.getElementById('mem-dept').value,
+    parent,
+    category,
+    packageCode: document.getElementById('mem-package').value.trim(),
+    students,
+    totalSessions: totalRaw === '' ? null : Number(totalRaw),
+    usedSessions: usedRaw === '' ? 0 : Number(usedRaw),
+    amountDue: amountRaw === '' ? 0 : Number(amountRaw),
+    isTrial,
+    giftStatus: document.getElementById('mem-gift').value.trim(),
+    note: document.getElementById('mem-note').value.trim(),
+    needsReview: false,
+    anomalyNote: ''
+  };
+  if (!isTrial) data.trialResult = '';
+  const id = memEditingId || genPoolId();
+  if (!memEditingId) { data.createdMonth = state.month; data.createdAt = Date.now(); }
+  savePool(id, data);
+  closeMemModal();
+  showToast('✓ 已儲存方案池');
+  renderMembership();
+}
+
+function renderMembership() {
+  const all = Object.entries(membershipPools).filter(([,p]) => p.store === state.store);
+
+  const needReview = all.filter(([,p]) => p.needsReview || p.anomalyNote);
+  const needRenewal = all.filter(([,p]) => !p.isTrial && computePoolStatus(p).key === '待續約');
+  const noPlan = all.filter(([,p]) => !p.isTrial && computePoolStatus(p).key === '已無方案');
+  const trialPending = all.filter(([,p]) => p.isTrial && !p.trialResult);
+  const totalDue = all.filter(([,p]) => (p.amountDue||0) > 0).reduce((s,[,p])=>s+(p.amountDue||0),0);
+
+  let filtered = all.filter(([,p]) => {
+    if (memFilter.category !== '全部' && p.category !== memFilter.category) return false;
+    if (memFilter.status !== '全部') {
+      const st = computePoolStatus(p).key;
+      if (memFilter.status === '體驗生') { if (!p.isTrial) return false; }
+      else if (st !== memFilter.status) return false;
+    }
+    if (memFilter.keyword) {
+      const kw = memFilter.keyword.trim();
+      const hay = (p.parent||'') + (p.students||[]).map(s=>s.name).join('') + (p.packageCode||'');
+      if (kw && !hay.includes(kw)) return false;
+    }
+    return true;
+  });
+
+  const groupKey = (p) => p.parent || '未命名家長';
+  const groups = {};
+  filtered.forEach(([id,p]) => {
+    const k = groupKey(p);
+    if (!groups[k]) groups[k] = [];
+    groups[k].push([id,p]);
+  });
+  const sortedKeys = Object.keys(groups).sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+
+  function statusBadge(p) {
+    const st = computePoolStatus(p);
+    const cls = st.key === '待確認' ? '待確認' : st.key;
+    return `<span class="mem-status-badge mem-status-${cls}" ${st.key==='待確認'?'style="background:#FEF3C7;color:#B45309"':''}>${st.label}</span>`;
+  }
+
+  function buildRow(id, p) {
+    const st = computePoolStatus(p);
+    const remaining = poolRemaining(p);
+    const trialActions = p.isTrial ? `
+      <button class="mem-btn purple" title="轉為正式會員" onclick="setPoolTrialResult('${id}','已轉正')">✓ 轉正</button>
+      <button class="mem-btn" title="標記放棄" onclick="setPoolTrialResult('${id}','已放棄')">✗ 放棄</button>` : '';
+    const reviewBtn = (p.needsReview || p.anomalyNote) ? `<button class="mem-btn" style="border-color:#B45309;color:#B45309" onclick="acknowledgePoolReview('${id}')">確認基準</button>` : '';
+    const studentsTxt = (p.students||[]).map(s=>s.name).join('、') || '<span style="color:var(--color-text-tertiary)">未填</span>';
+    const sharedTag = (p.students||[]).length > 1 ? `<span class="mem-gift-tag" style="background:#EDE9FE;color:#7C3AED">共用${p.students.length}人</span>` : '';
+    return `<tr>
+      <td>
+        <div style="font-weight:600">${p.category || '—'}${p.packageCode?` <span style="font-weight:400;font-size:11px;color:var(--color-text-tertiary)">(${p.packageCode})</span>`:''}</div>
+        <div style="font-size:11px;color:var(--color-text-secondary)">${studentsTxt} ${sharedTag}</div>
+        ${p.anomalyNote ? `<div style="font-size:11px;color:#B45309;margin-top:2px">⚠️ ${p.anomalyNote}</div>` : ''}
+      </td>
+      <td>${statusBadge(p)}</td>
+      <td>
+        <input class="mem-input-sm" type="number" min="0" value="${p.totalSessions ?? ''}"
+          onchange="quickUpdatePoolField('${id}','totalSessions',this.value)"> /
+        <input class="mem-input-sm" type="number" min="0" value="${p.usedSessions ?? 0}"
+          onchange="quickUpdatePoolField('${id}','usedSessions',this.value)">
+        ${remaining!==null?`<div style="font-size:11px;color:var(--color-text-tertiary)">剩 ${remaining}</div>`:''}
+      </td>
+      <td>
+        <input class="mem-amt-input" type="number" min="0" value="${p.amountDue ?? 0}"
+          onchange="quickUpdatePoolField('${id}','amountDue',this.value)">
+      </td>
+      <td>
+        <input class="mem-note-input" type="text" value="${(p.giftStatus||'').replace(/"/g,'&quot;')}" placeholder="贈品/其他狀態"
+          onchange="quickUpdatePoolField('${id}','giftStatus',this.value)">
+      </td>
+      <td>
+        <input class="mem-note-input" type="text" value="${(p.note||'').replace(/"/g,'&quot;')}" placeholder="備註"
+          onchange="quickUpdatePoolField('${id}','note',this.value)">
+      </td>
+      <td style="white-space:nowrap">
+        ${reviewBtn}${trialActions}
+        <button class="mem-btn" onclick="openMemModal('${id}')">✏️</button>
+        <button class="mem-btn red" onclick="deletePool('${id}')">🗑</button>
+      </td>
+    </tr>`;
+  }
+
+  let groupsHtml = sortedKeys.map(k => {
+    const items = groups[k].sort((a,b)=>(a[1].category||'').localeCompare(b[1].category||'','zh-Hant'));
+    const dueInGroup = items.reduce((s,[,p])=>s+(p.amountDue||0),0);
+    return `<div class="mem-group">
+      <div class="mem-group-hdr">
+        <span class="mem-group-title">👪 ${k}</span>
+        <span class="mem-group-meta">${items.length} 個方案${dueInGroup>0?`　待收 $${fmt(dueInGroup)}`:''}</span>
+      </div>
+      <div class="table-wrap">
+        <table class="mem-table">
+          <thead><tr><th>類別/方案</th><th>狀態</th><th>總堂/已用</th><th>待收金額</th><th>贈品/狀態</th><th>備註</th><th>操作</th></tr></thead>
+          <tbody>${items.map(([id,p])=>buildRow(id,p)).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (filtered.length === 0) {
+    groupsHtml = `<div class="mem-empty">沒有符合條件的方案池<br><span style="font-size:12px">點右上角「＋ 新增方案池」開始記錄，或匯入出席表自動建立</span></div>`;
+  }
+
+  const cats = ['全部', ...new Set(all.map(([,p])=>p.category).filter(Boolean))];
+  const catOpts = cats.map(c=>`<option value="${c}" ${memFilter.category===c?'selected':''}>${c}</option>`).join('');
+  const statusOpts = ['全部','進行中','待續約','已無方案','體驗生','待確認'].map(s=>`<option value="${s}" ${memFilter.status===s?'selected':''}>${s}</option>`).join('');
+
+  document.getElementById('tab-membership').innerHTML = `
+    <div class="kpi-grid" style="margin-bottom:14px">
+      <div class="kpi-card">
+        <div class="kpi-label">待確認基準/異動</div>
+        <div class="kpi-value" style="color:#B45309">${needReview.length} 個</div>
+        <div class="kpi-sub">匯入出席時偵測到</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">待續約提醒</div>
+        <div class="kpi-value" style="color:var(--color-amber)">${needRenewal.length} 個</div>
+        <div class="kpi-sub">剩餘堂數 ≤ 2</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">已無方案</div>
+        <div class="kpi-value" style="color:var(--color-red)">${noPlan.length} 個</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">體驗待轉正</div>
+        <div class="kpi-value" style="color:#7C3AED">${trialPending.length} 位</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">待收金額合計</div>
+        <div class="kpi-value">$${fmt(totalDue)}</div>
+      </div>
+    </div>
+    <div class="mem-toolbar">
+      <select onchange="memFilter.category=this.value;renderMembership()">${catOpts}</select>
+      <select onchange="memFilter.status=this.value;renderMembership()">${statusOpts}</select>
+      <input type="text" placeholder="搜尋家長 / 孩子 / 方案代號" value="${memFilter.keyword}"
+        oninput="memFilter.keyword=this.value;renderMembership()" style="min-width:180px">
+      <button class="mem-btn" onclick="openPkgTableModal()">🗂️ 方案代號對照表</button>
+      <button class="mem-btn" onclick="triggerAttendanceImport()">📥 匯入出席表</button>
+      <button class="btn-primary" style="margin-left:auto" onclick="openMemModal(null)">＋ 新增方案池</button>
+    </div>
+    ${groupsHtml}`;
+}
+
+// ── 方案代號對照表管理 ──
+function openPkgTableModal() {
+  renderPkgTable();
+  document.getElementById('pkgtable-modal').classList.add('open');
+}
+function closePkgTableModal() { document.getElementById('pkgtable-modal').classList.remove('open'); }
+function renderPkgTable() {
+  const rows = Object.entries(packageCodeTable).sort((a,b)=>a[0].localeCompare(b[0],'zh-Hant'));
+  document.getElementById('pkgtable-body').innerHTML = rows.map(([code,info])=>`
+    <tr>
+      <td>${code}</td>
+      <td><input class="mem-input-sm" type="number" value="${info.sessions}" onchange="updatePkgRow('${code}','sessions',this.value)"></td>
+      <td><input class="mem-note-input" style="width:80px" type="text" value="${info.category}" onchange="updatePkgRow('${code}','category',this.value)"></td>
+      <td><button class="mem-btn red" onclick="deletePkgRow('${code}')">🗑</button></td>
+    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--color-text-tertiary)">尚無資料</td></tr>';
+}
+function updatePkgRow(code, field, val) {
+  if (!packageCodeTable[code]) return;
+  packageCodeTable[code][field] = field === 'sessions' ? Number(val) : val.trim();
+  save(); syncToFirebase(true);
+}
+function deletePkgRow(code) {
+  if (!confirm(`刪除方案代號「${code}」？`)) return;
+  delete packageCodeTable[code];
+  save(); syncToFirebase(true);
+  renderPkgTable();
+}
+function addPkgTableRow() {
+  const code = document.getElementById('pkg-new-code').value.trim();
+  const sessions = Number(document.getElementById('pkg-new-sessions').value);
+  const category = document.getElementById('pkg-new-category').value.trim();
+  if (!code || !sessions || !category) { showToast('請完整填寫代號／堂數／類別', true); return; }
+  packageCodeTable[code] = { sessions, category };
+  save(); syncToFirebase(true);
+  document.getElementById('pkg-new-code').value = '';
+  document.getElementById('pkg-new-sessions').value = '';
+  document.getElementById('pkg-new-category').value = '';
+  renderPkgTable();
+  showToast('✓ 已新增方案代號');
+}
+// 從方案代號或任意文字中，比對出最接近的代號（用於備註關鍵字判斷）
+function matchPackageCode(text) {
+  if (!text) return null;
+  const codes = Object.keys(packageCodeTable).sort((a,b)=>b.length-a.length); // 長的代號優先比對，避免子字串誤判
+  for (const code of codes) {
+    if (text.includes(code)) return code;
+  }
+  // 退一步：比對「類別＋堂數」組合，例如備註「小象48」已經涵蓋在上面；再試單純數字+類別關鍵字
+  for (const code of codes) {
+    const info = packageCodeTable[code];
+    if (text.includes(info.category) && text.includes(String(info.sessions))) return code;
+  }
+  return null;
+}
+
+// ── 出席表匯入（累加去重 + 異動偵測）──
+function triggerAttendanceImport() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.xlsx,.xls,.csv';
+  inp.onchange = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    showToast('解析出席表中...');
+    try {
+      await importAttendanceExcel(f);
+    } catch(err) {
+      showToast('匯入失敗：' + err.message, true);
+      console.error(err);
+    }
+  };
+  inp.click();
+}
+
+async function importAttendanceExcel(file) {
+  const XLSX = await loadXLSX();
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+  let newCount = 0, dupCount = 0, newPoolCount = 0, anomalyCount = 0;
+  const touchedPools = new Set();
+
+  rows.forEach(row => {
+    const course = String(row['課程'] || '').trim();
+    const dateRaw = row['日期'];
+    const dateStr = dateRaw instanceof Date ? dateRaw.toISOString() : String(dateRaw || '');
+    const time = String(row['時間'] || '').trim();
+    const parent = String(row['會員'] || '').trim();
+    const student = String(row['依屬'] || '').trim();
+    const packageName = String(row['方案'] || '').trim();
+    if (!parent || !packageName || packageName === '沒有課卡') return; // 無方案的另外走「已無方案名單」，不進方案池累加
+
+    // dedupe key：日期＋時間＋依屬＋課程（不含會員，因為同一課程同一時段依屬已足夠唯一）
+    const key = `${dateStr}|${time}|${student}|${course}`;
+    if (attendanceSeenKeys[key]) { dupCount++; return; }
+    attendanceSeenKeys[key] = true;
+    newCount++;
+
+    // 判斷類別：用方案名稱比對代號表
+    const matchedCode = matchPackageCode(packageName);
+    const category = matchedCode ? packageCodeTable[matchedCode].category : (packageName.match(/^[\u4e00-\u9fa5]+/)?.[0] || packageName);
+
+    // 找既有方案池：同一會員(家長) + 同一類別
+    let poolEntry = Object.entries(membershipPools).find(([,p]) =>
+      p.store === state.store && p.parent === parent && p.category === category);
+
+    if (!poolEntry) {
+      // 建立新方案池，標記待確認基準
+      const id = genPoolId();
+      const totalFromCode = matchedCode ? packageCodeTable[matchedCode].sessions : null;
+      membershipPools[id] = {
+        store: state.store, dept: state.store === 'flagship' ? '2F' : (getDepts()[0]||''),
+        parent, category, packageCode: matchedCode || packageName,
+        students: [{ name: student, shared: false }],
+        totalSessions: totalFromCode, usedSessions: 1,
+        amountDue: 0, isTrial: false, giftStatus: '', note: '',
+        needsReview: true, anomalyNote: '',
+        createdMonth: state.month, createdAt: Date.now(), updatedAt: Date.now()
+      };
+      poolEntry = [id, membershipPools[id]];
+      newPoolCount++;
+    } else {
+      const [id, p] = poolEntry;
+      // 加入孩子（若尚未列入）
+      if (!(p.students||[]).some(s=>s.name===student)) {
+        p.students = [...(p.students||[]), { name: student, shared: (p.students||[]).length>0 }];
+      }
+      // 異動偵測：方案名稱換了 或 已用堂數倒退
+      if (matchedCode && p.packageCode && matchedCode !== p.packageCode) {
+        p.anomalyNote = `方案代號由「${p.packageCode}」變為「${matchedCode}」，可能已續約，請確認新基準`;
+        p.packageCode = matchedCode;
+        anomalyCount++;
+      } else {
+        p.usedSessions = Number(p.usedSessions || 0) + 1;
+      }
+      p.updatedAt = Date.now();
+    }
+    touchedPools.add(poolEntry[0]);
+  });
+
+  save();
+  syncToFirebase(true);
+
+  document.getElementById('attend-import-summary').innerHTML =
+    `本次匯入共 <b>${rows.length}</b> 列，新增計入 <b>${newCount}</b> 筆（跳過重複 ${dupCount} 筆）。<br>
+     新建立方案池 <b>${newPoolCount}</b> 個（待確認基準），偵測到方案異動 <b>${anomalyCount}</b> 個。`;
+  const reviewList = [...touchedPools].map(id => membershipPools[id]).filter(p => p.needsReview || p.anomalyNote);
+  document.getElementById('attend-import-review').innerHTML = reviewList.length ? `
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px">以下方案池需要你確認基準／異動：</div>
+    ${reviewList.map(p => `
+      <div class="mem-group-hdr" style="margin-bottom:6px">
+        <span>${p.parent}｜${p.category}｜${(p.students||[]).map(s=>s.name).join('、')}</span>
+        <span class="mem-group-meta">${p.anomalyNote || '首次建立，請確認總堂數/已用堂數'}</span>
+      </div>`).join('')}
+  ` : '<div style="color:var(--color-text-tertiary);font-size:12px">沒有需要人工確認的項目。</div>';
+  document.getElementById('attend-import-modal').classList.add('open');
+  renderMembership();
+}
+function closeAttendImportModal() { document.getElementById('attend-import-modal').classList.remove('open'); }
+
+// ── 流水帳「方案/入會」新增 → 方案池比對確認 ──
+function tryLinkSalesEntryToPool(rec) {
+  if (rec.category !== '方案/入會') return;
+  const parts = (rec.customer || '').split('-').map(s=>s.trim()).filter(Boolean);
+  if (parts.length === 0) return;
+  const parentGuess = parts[0];
+  const studentGuess = parts[1] || '';
+
+  const matchedCode = matchPackageCode(rec.note || '') || matchPackageCode(rec.customer || '');
+  const category = matchedCode ? packageCodeTable[matchedCode].category : null;
+
+  // 找候選方案池：家長名完全一致或互相包含
+  const candidates = Object.entries(membershipPools).filter(([,p]) => {
+    if (p.store !== state.store) return false;
+    const nameMatch = p.parent === parentGuess || p.parent.includes(parentGuess) || parentGuess.includes(p.parent);
+    if (!nameMatch) return false;
+    if (category && p.category && p.category !== category) return false;
+    return true;
+  });
+
+  salesPoolCandidate = { rec, parentGuess, studentGuess, matchedCode, category, candidates };
+
+  const purchasedSessions = matchedCode ? packageCodeTable[matchedCode].sessions : null;
+  let bodyHtml = `<div>新增交易：<b>${rec.customer}</b>　$${fmt(rec.amount)}<br>備註：${rec.note || '（無）'}</div><hr style="margin:10px 0;border-color:var(--color-border)">`;
+
+  if (candidates.length > 0) {
+    const [, p] = candidates[0];
+    const remaining = poolRemaining(p) || 0;
+    const newTotal = remaining + (purchasedSessions || 0);
+    bodyHtml += `
+      <div>找到相符方案池：<b>${p.parent}</b>（${p.category}，孩子：${(p.students||[]).map(s=>s.name).join('、')}）</div>
+      <div style="margin-top:6px">目前剩餘堂數：<b>${remaining}</b> 堂（${p.category}類別）</div>
+      <div>推算新購堂數：<b>${purchasedSessions ?? '無法自動判斷，請手動修正'}</b>${matchedCode?`（${matchedCode}）`:''}</div>
+      <div style="margin-top:6px;font-weight:700">→ 新方案總堂數 = ${remaining} + ${purchasedSessions ?? '?'} = <span id="salespool-newtotal">${newTotal}</span> 堂</div>
+      <div style="margin-top:8px">
+        <label style="font-size:12px">手動修正總堂數：</label>
+        <input id="salespool-total-override" type="number" value="${newTotal}" class="mem-input-sm" style="width:70px" oninput="document.getElementById('salespool-newtotal').textContent=this.value">
+      </div>`;
+    salesPoolCandidate.matchedPoolId = candidates[0][0];
+  } else {
+    bodyHtml += `
+      <div>未找到符合的既有方案池。</div>
+      <div style="margin-top:6px">推算新購堂數：<b>${purchasedSessions ?? '無法自動判斷，請手動修正'}</b>${matchedCode?`（${matchedCode}）`:''}／類別：<b>${category || '請手動指定'}</b></div>
+      <div style="margin-top:8px">
+        <label style="font-size:12px">總堂數：</label>
+        <input id="salespool-total-override" type="number" value="${purchasedSessions ?? ''}" class="mem-input-sm" style="width:70px">
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--color-text-tertiary)">確認後將建立新方案池。</div>`;
+    salesPoolCandidate.matchedPoolId = null;
+  }
+  document.getElementById('salespool-body').innerHTML = bodyHtml;
+  document.getElementById('salespool-modal').classList.add('open');
+}
+function closeSalesPoolModal() {
+  document.getElementById('salespool-modal').classList.remove('open');
+  salesPoolCandidate = null;
+}
+function confirmSalesPoolMatch() {
+  if (!salesPoolCandidate) return;
+  const totalOverride = document.getElementById('salespool-total-override');
+  const newTotal = totalOverride ? Number(totalOverride.value) || 0 : 0;
+  const { rec, parentGuess, studentGuess, matchedCode, category, matchedPoolId } = salesPoolCandidate;
+
+  if (matchedPoolId) {
+    savePool(matchedPoolId, {
+      totalSessions: newTotal,
+      usedSessions: 0,
+      packageCode: matchedCode || membershipPools[matchedPoolId].packageCode,
+      needsReview: false, anomalyNote: ''
+    });
+  } else {
+    const id = genPoolId();
+    membershipPools[id] = {
+      store: state.store, dept: state.dept || getDepts()[0],
+      parent: parentGuess, category: category || '未分類',
+      packageCode: matchedCode || '', students: studentGuess ? [{name: studentGuess, shared:false}] : [],
+      totalSessions: newTotal, usedSessions: 0, amountDue: 0,
+      isTrial: false, giftStatus: '', note: `流水帳自動建立：${rec.note||''}`,
+      needsReview: false, anomalyNote: '',
+      createdMonth: state.month, createdAt: Date.now(), updatedAt: Date.now()
+    };
+    save(); syncToFirebase(true);
+  }
+  showToast('✓ 已更新方案池');
+  closeSalesPoolModal();
+  if (document.getElementById('tab-membership').innerHTML) renderMembership();
+}
+function openMemModalFromSales() {
+  closeSalesPoolModal();
+  openMemModal(null);
 }
 
 </script>
