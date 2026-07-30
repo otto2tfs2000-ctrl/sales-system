@@ -239,6 +239,7 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 .mem-status-體驗生 { background:#EDE9FE;color:#7C3AED; }
 .mem-status-已轉正 { background:var(--color-green-bg);color:var(--color-green); }
 .mem-status-已放棄 { background:#F3F4F6;color:#6B7280; }
+.mem-status-已結案 { background:#E5E7EB;color:#4B5563; }
 .mem-input-sm { width:44px;font-size:12px;padding:3px 4px;text-align:center;border:1px solid var(--color-border);border-radius:4px;background:var(--color-bg);color:var(--color-text-primary); }
 .mem-amt-input { width:68px;font-size:12px;padding:3px 5px;border:1px solid var(--color-border);border-radius:4px;background:var(--color-bg);color:var(--color-text-primary); }
 .mem-note-input { width:100%;min-width:100px;font-size:12px;padding:3px 5px;border:1px solid var(--color-border);border-radius:4px;background:var(--color-bg);color:var(--color-text-primary); }
@@ -874,6 +875,30 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 </div>
 
 <!-- 方案池分析 Modal -->
+<!-- 追蹤提醒 Modal -->
+<div class="appt-modal-overlay" id="followup-modal">
+  <div class="appt-modal" style="max-width:420px">
+    <div class="appt-modal-title">⏰ 設定追蹤提醒</div>
+    <div class="appt-form-grid">
+      <div class="appt-form-group full">
+        <label>提醒日期 *</label>
+        <input id="followup-date" type="date">
+      </div>
+      <div class="appt-form-group full">
+        <label>備註（例如：家長說暑假後再評估）</label>
+        <textarea id="followup-note" rows="2" placeholder="選填"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px">
+      <button class="mem-btn red" onclick="clearFollowUp()">🗑 移除提醒</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" onclick="closeFollowUpModal()">取消</button>
+        <button class="btn-primary" onclick="saveFollowUp()">✓ 儲存提醒</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="appt-modal-overlay" id="poolanalysis-modal">
   <div class="appt-modal" style="max-width:520px">
     <div class="appt-modal-title" id="poolanalysis-title">📊 會員分析</div>
@@ -4854,6 +4879,7 @@ function genPoolId() { return 'pool_' + Date.now() + '_' + Math.random().toStrin
 
 // 依剩餘堂數 / 體驗狀態計算顯示狀態
 function computePoolStatus(p) {
+  if (p.closed) return { key: '已結案', label: '🔒 已結案' };
   if (p.needsReview) return { key: '待確認', label: '⚠️ 待確認基準' };
   if (p.anomalyNote) return { key: '待確認', label: '⚠️ 偵測到異動' };
   if (p.isTrial) {
@@ -4873,6 +4899,66 @@ function poolRemaining(p) {
   const total = Number(p.totalSessions);
   if (!total || isNaN(total)) return null;
   return total - Number(p.usedSessions || 0);
+}
+function closePool(id) {
+  const p = membershipPools[id];
+  if (!p) return;
+  const reason = prompt('確認家長不再繼續此方案，可簡述原因（選填，直接按確定可留空）：', '') ;
+  if (reason === null) return; // 使用者按取消
+  savePool(id, { closed: true, closedAt: Date.now(), closedReason: reason.trim() });
+  showToast('✓ 已結案，這個方案池不會再出現在待續約/已無方案提醒中');
+  renderMembership();
+}
+function reopenPool(id) {
+  if (!confirm('確定要重新開啟這個方案池嗎？')) return;
+  savePool(id, { closed: false });
+  showToast('✓ 已重新開啟');
+  renderMembership();
+}
+
+// ── 追蹤提醒（例如「家長說9月再評估」）──
+let followUpEditingId = null;
+function openFollowUpModal(id) {
+  followUpEditingId = id;
+  const p = membershipPools[id];
+  document.getElementById('followup-date').value = p.followUpDate ? p.followUpDate.slice(0,10) : '';
+  document.getElementById('followup-note').value = p.followUpNote || '';
+  document.getElementById('followup-modal').classList.add('open');
+}
+function closeFollowUpModal() {
+  document.getElementById('followup-modal').classList.remove('open');
+  followUpEditingId = null;
+}
+function saveFollowUp() {
+  const dateVal = document.getElementById('followup-date').value;
+  if (!dateVal) { showToast('請選擇提醒日期', true); return; }
+  const note = document.getElementById('followup-note').value.trim();
+  savePool(followUpEditingId, { followUpDate: dateVal, followUpNote: note });
+  showToast('✓ 已設定追蹤提醒');
+  closeFollowUpModal();
+  renderMembership();
+}
+function clearFollowUp() {
+  if (!followUpEditingId) return;
+  savePool(followUpEditingId, { followUpDate: '', followUpNote: '' });
+  showToast('已移除提醒');
+  closeFollowUpModal();
+  renderMembership();
+}
+
+// 會員層級健康狀況：同一會員名下可能有多個方案池（不同類別），
+// 判斷「這個會員需不需要被聯繫催續約」時，要看他名下所有方案池裡「狀況最好」的那一個，
+// 而不是單一方案池——避免舊的、已被新方案取代的方案池被誤判成需要聯繫。已結案的方案池不列入判斷。
+const STATUS_RANK = { '進行中': 4, '待續約': 3, '未設定': 2, '已無方案': 1 };
+function computeMemberBestStatus(parent, poolsForStore) {
+  const memberPools = poolsForStore.filter(([,p]) => p.parent === parent && !p.isTrial && !p.closed);
+  let best = null, bestRank = -1;
+  memberPools.forEach(([,p]) => {
+    const key = computePoolStatus(p).key;
+    const rank = STATUS_RANK[key];
+    if (rank !== undefined && rank > bestRank) { bestRank = rank; best = key; }
+  });
+  return best; // null 代表這個會員名下沒有可判斷狀態的方案池（例如全部待確認、體驗生或已結案）
 }
 
 // ── 會員分析：上課頻率 / 預估用完日期 / 推薦堂數 ──
@@ -5037,11 +5123,18 @@ function saveMemModal() {
 
 function renderMembership() {
   const all = Object.entries(membershipPools).filter(([,p]) => p.store === state.store);
+  const todayStr = new Date().toISOString().slice(0,10);
 
-  const needReview = all.filter(([,p]) => p.needsReview || p.anomalyNote);
-  const needRenewal = all.filter(([,p]) => !p.isTrial && computePoolStatus(p).key === '待續約');
-  const noPlan = all.filter(([,p]) => !p.isTrial && computePoolStatus(p).key === '已無方案');
+  const needReview = all.filter(([,p]) => !p.closed && (p.needsReview || p.anomalyNote));
+  // 待續約提醒 / 已無方案：以「會員」為單位判斷（看該會員名下所有方案池裡狀況最好的那一個），
+  // 避免舊方案池（已被新方案取代）誤判成需要聯繫
+  const allParents = [...new Set(all.filter(([,p])=>!p.isTrial).map(([,p])=>p.parent))];
+  const memberBestStatusMap = {};
+  allParents.forEach(parent => { memberBestStatusMap[parent] = computeMemberBestStatus(parent, all); });
+  const needRenewal = allParents.filter(parent => memberBestStatusMap[parent] === '待續約');
+  const noPlan = allParents.filter(parent => memberBestStatusMap[parent] === '已無方案');
   const trialPending = all.filter(([,p]) => p.isTrial && !p.trialResult);
+  const followUpDue = all.filter(([,p]) => p.followUpDate && p.followUpDate <= todayStr);
   const totalDue = all.filter(([,p]) => (p.amountDue||0) > 0).reduce((s,[,p])=>s+(p.amountDue||0),0);
 
   let filtered = all.filter(([,p]) => {
@@ -5089,11 +5182,28 @@ function renderMembership() {
     const reviewBtn = (p.needsReview || p.anomalyNote) ? `<button class="mem-btn" style="border-color:#B45309;color:#B45309" onclick="acknowledgePoolReview('${id}')">確認基準</button>` : '';
     const studentsTxt = (p.students||[]).map(s=>s.name).join('、') || '<span style="color:var(--color-text-tertiary)">未填</span>';
     const sharedTag = (p.students||[]).length > 1 ? `<span class="mem-gift-tag" style="background:#EDE9FE;color:#7C3AED">共用${p.students.length}人</span>` : '';
+    // 如果這個方案池狀況不好（待續約/已無方案），但同一會員名下有其他更健康的方案池，加註提示，避免誤判成急迫
+    let coveredTag = '';
+    if (!p.isTrial && !p.closed && (st.key === '已無方案' || st.key === '待續約')) {
+      const memberBest = memberBestStatusMap[p.parent];
+      if (memberBest && STATUS_RANK[memberBest] > STATUS_RANK[st.key]) {
+        coveredTag = `<div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">ℹ️ 此會員名下另有方案「${memberBest}」，非急迫，可能已續約其他方案</div>`;
+      }
+    }
+    const closedTag = p.closed ? `<div style="font-size:11px;color:#6B7280;margin-top:2px">🔒 已結案${p.closedReason?`：${p.closedReason}`:''}${p.closedAt?`（${new Date(p.closedAt).toLocaleDateString('zh-TW')}）`:''}</div>` : '';
+    let followUpTag = '';
+    if (p.followUpDate) {
+      const isDue = p.followUpDate <= todayStr;
+      followUpTag = `<div style="font-size:11px;margin-top:2px;color:${isDue?'#B45309':'var(--color-text-tertiary)'}">⏰ ${isDue?'提醒已到期':'追蹤提醒'}：${p.followUpDate.slice(5).replace('-','/')}${p.followUpNote?`（${p.followUpNote}）`:''}</div>`;
+    }
     return `<tr>
       <td>
         <div style="font-weight:600">${p.category || '—'}${p.packageCode?` <span style="font-weight:400;font-size:11px;color:var(--color-text-tertiary)">(${p.packageCode})</span>`:''}</div>
         <div style="font-size:11px;color:var(--color-text-secondary)">${studentsTxt} ${sharedTag}</div>
         ${p.anomalyNote ? `<div style="font-size:11px;color:#B45309;margin-top:2px">⚠️ ${p.anomalyNote}</div>` : ''}
+        ${coveredTag}
+        ${closedTag}
+        ${followUpTag}
       </td>
       <td>${statusBadge(p)}</td>
       <td>
@@ -5118,6 +5228,10 @@ function renderMembership() {
       <td style="white-space:nowrap">
         ${reviewBtn}${trialActions}
         <button class="mem-btn" title="會員分析" onclick="openPoolAnalysisModal('${id}')">📊</button>
+        ${p.closed
+          ? `<button class="mem-btn" title="重新開啟" onclick="reopenPool('${id}')">🔓 重開</button>`
+          : `<button class="mem-btn" title="確認不再繼續，結案" onclick="closePool('${id}')">🔒 結案</button>`}
+        <button class="mem-btn" title="設定追蹤提醒" onclick="openFollowUpModal('${id}')">⏰</button>
         <button class="mem-btn" onclick="openMemModal('${id}')">✏️</button>
         <button class="mem-btn red" onclick="deletePool('${id}')">🗑</button>
       </td>
@@ -5147,7 +5261,7 @@ function renderMembership() {
 
   const cats = ['全部', ...new Set(all.map(([,p])=>p.category).filter(Boolean))];
   const catOpts = cats.map(c=>`<option value="${c}" ${memFilter.category===c?'selected':''}>${c}</option>`).join('');
-  const statusOpts = ['全部','進行中','待續約','已無方案','體驗生','待確認'].map(s=>`<option value="${s}" ${memFilter.status===s?'selected':''}>${s}</option>`).join('');
+  const statusOpts = ['全部','進行中','待續約','已無方案','體驗生','待確認','已結案'].map(s=>`<option value="${s}" ${memFilter.status===s?'selected':''}>${s}</option>`).join('');
 
   const importMeta = attendanceImportMeta[state.store];
   const importBannerHtml = importMeta && importMeta.lastDate
@@ -5168,16 +5282,22 @@ function renderMembership() {
       </div>
       <div class="kpi-card">
         <div class="kpi-label">待續約提醒</div>
-        <div class="kpi-value" style="color:var(--color-amber)">${needRenewal.length} 個</div>
-        <div class="kpi-sub">剩餘堂數 ≤ 2</div>
+        <div class="kpi-value" style="color:var(--color-amber)">${needRenewal.length} 位</div>
+        <div class="kpi-sub">會員名下最好狀況剩 ≤2堂</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">已無方案</div>
-        <div class="kpi-value" style="color:var(--color-red)">${noPlan.length} 個</div>
+        <div class="kpi-value" style="color:var(--color-red)">${noPlan.length} 位</div>
+        <div class="kpi-sub">會員名下所有方案皆已用完</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">體驗待轉正</div>
         <div class="kpi-value" style="color:#7C3AED">${trialPending.length} 位</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">追蹤提醒已到期</div>
+        <div class="kpi-value" style="color:#B45309">${followUpDue.length} 個</div>
+        <div class="kpi-sub">家長約定的評估時間到了</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">待收金額合計</div>
@@ -5286,6 +5406,10 @@ async function exportPoolsBackup() {
       '異動提醒': p.anomalyNote || '',
       '出席紀錄筆數': (p.attendanceLog||[]).length,
       '購買紀錄筆數': (p.purchaseLog||[]).length,
+      '是否結案': p.closed ? '是' : '否',
+      '結案原因': p.closedReason || '',
+      '追蹤提醒日期': p.followUpDate || '',
+      '追蹤提醒備註': p.followUpNote || '',
       '最後更新': p.updatedAt ? new Date(p.updatedAt).toLocaleString('zh-TW') : '',
       '方案池ID': id
     };
@@ -5294,7 +5418,8 @@ async function exportPoolsBackup() {
   const ws = XLSX.utils.json_to_sheet(rows);
   ws['!cols'] = [
     {wch:14},{wch:8},{wch:10},{wch:20},{wch:10},{wch:8},{wch:8},{wch:8},
-    {wch:10},{wch:10},{wch:10},{wch:16},{wch:20},{wch:10},{wch:26},{wch:18},{wch:14}
+    {wch:10},{wch:10},{wch:10},{wch:16},{wch:20},{wch:10},{wch:26},{wch:10},{wch:10},
+    {wch:20},{wch:14},{wch:26},{wch:18},{wch:14}
   ];
   const wb = XLSX.utils.book_new();
   const storeName = state.store === 'flagship' ? '旗艦館' : '國圖館';
