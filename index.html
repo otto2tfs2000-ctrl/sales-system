@@ -873,6 +873,17 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
   </div>
 </div>
 
+<!-- 方案池分析 Modal -->
+<div class="appt-modal-overlay" id="poolanalysis-modal">
+  <div class="appt-modal" style="max-width:520px">
+    <div class="appt-modal-title" id="poolanalysis-title">📊 會員分析</div>
+    <div id="poolanalysis-body" style="font-size:13px;line-height:1.9"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+      <button class="btn-secondary" onclick="closePoolAnalysisModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
 <!-- Edit Record Modal -->
 <div class="edit-modal-overlay hidden" id="edit-modal-overlay" onclick="if(event.target===this)closeEditModal()">
   <div class="edit-modal-box">
@@ -1108,6 +1119,7 @@ let packageCodeTable = JSON.parse(localStorage.getItem('packageCodeTable') || 'n
   '大象96': { sessions: 96, category: '大象' }
 };
 let attendanceSeenKeys = JSON.parse(localStorage.getItem('attendanceSeenKeys') || '{}');
+let attendanceImportMeta = JSON.parse(localStorage.getItem('attendanceImportMeta') || '{}'); // { [store]: { lastDate, lastImportAt, lastFileRows } }
 
 let gsConfig = JSON.parse(localStorage.getItem('gsConfig') || 'null') || { url: '', name: '業績資料' };
 // Firebase 設定（已內建，開啟即自動連線）
@@ -1201,6 +1213,10 @@ function startFirebaseListener() {
     }
     if (data.attendanceSeenKeys) {
       attendanceSeenKeys = data.attendanceSeenKeys;
+      changed = true;
+    }
+    if (data.attendanceImportMeta) {
+      attendanceImportMeta = data.attendanceImportMeta;
       changed = true;
     }
     // 注意：若對應欄位不存在，保留本機現有資料，不清空（避免資料遺失）
@@ -1301,6 +1317,7 @@ function save() {
   localStorage.setItem('membershipPools', JSON.stringify(membershipPools));
   localStorage.setItem('packageCodeTable', JSON.stringify(packageCodeTable));
   localStorage.setItem('attendanceSeenKeys', JSON.stringify(attendanceSeenKeys));
+  localStorage.setItem('attendanceImportMeta', JSON.stringify(attendanceImportMeta));
     localStorage.setItem('invPrefixes', JSON.stringify(state.invPrefixes));
     localStorage.setItem('monthStaff', JSON.stringify(monthStaff));
     localStorage.setItem('manual2fRevenue', JSON.stringify(state.manual2fRevenue));
@@ -1389,6 +1406,7 @@ async function syncToFirebase(silent=false) {
       membershipPools: membershipPools,
       packageCodeTable: packageCodeTable,
       attendanceSeenKeys: attendanceSeenKeys,
+      attendanceImportMeta: attendanceImportMeta,
       manualStats: state.manualStats,
       monthStaff: monthStaff,
       dailyRevenue: state.dailyRevenue,
@@ -1422,6 +1440,7 @@ async function loadFromSheets(silent=false) {
     if (data.membershipPools) membershipPools = data.membershipPools;
     if (data.packageCodeTable) packageCodeTable = data.packageCodeTable;
     if (data.attendanceSeenKeys) attendanceSeenKeys = data.attendanceSeenKeys;
+    if (data.attendanceImportMeta) attendanceImportMeta = data.attendanceImportMeta;
     if (data.manualStats) Object.assign(state.manualStats, data.manualStats);
     if (data.monthStaff) Object.assign(monthStaff, data.monthStaff);
     if (data.settings && data.settings.invPrefixes) Object.assign(state.invPrefixes, data.settings.invPrefixes);
@@ -4827,7 +4846,7 @@ function addLeadFromPage() {
 // ══════════════════════════════════════
 //  會員方案追蹤 (Membership Pool Tracking)
 // ══════════════════════════════════════
-let memFilter = { category: '全部', status: '全部', keyword: '' };
+let memFilter = { category: '全部', status: '全部', keyword: '', remainMin: '', remainMax: '' };
 let memEditingId = null; // 目前 modal 編輯中的 id（null = 新增）
 let salesPoolCandidate = null; // 流水帳觸發比對時暫存的候選資料
 
@@ -4854,6 +4873,59 @@ function poolRemaining(p) {
   const total = Number(p.totalSessions);
   if (!total || isNaN(total)) return null;
   return total - Number(p.usedSessions || 0);
+}
+
+// ── 會員分析：上課頻率 / 預估用完日期 / 推薦堂數 ──
+// 資料基礎：pool.attendanceLog（每筆出席事件）。初期資料不足時，一律回傳「資料不足」，不硬算。
+const MIN_ATTENDANCE_FOR_ANALYSIS = 3; // 至少要有3筆出席紀錄，頻率推算才有參考價值
+
+function computeAttendanceFrequency(p) {
+  const log = (p.attendanceLog || []).slice().filter(a => a.date).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if (log.length < MIN_ATTENDANCE_FOR_ANALYSIS) {
+    return { sufficient: false, count: log.length };
+  }
+  const dates = log.map(a => new Date(a.date).getTime());
+  const first = dates[0], last = dates[dates.length-1];
+  const spanDays = (last - first) / 86400000;
+  if (spanDays <= 0) return { sufficient: false, count: log.length };
+  const avgIntervalDays = spanDays / (dates.length - 1);
+  const sessionsPerWeek = avgIntervalDays > 0 ? 7 / avgIntervalDays : 0;
+  return {
+    sufficient: true,
+    count: log.length,
+    avgIntervalDays: Math.round(avgIntervalDays * 10) / 10,
+    sessionsPerWeek: Math.round(sessionsPerWeek * 100) / 100,
+    lastDate: new Date(last)
+  };
+}
+
+function predictDepletion(p) {
+  const remaining = poolRemaining(p);
+  if (remaining === null || remaining <= 0) return null;
+  const freq = computeAttendanceFrequency(p);
+  if (!freq.sufficient || freq.sessionsPerWeek <= 0) return null;
+  const weeksLeft = remaining / freq.sessionsPerWeek;
+  const daysLeft = Math.round(weeksLeft * 7);
+  const base = freq.lastDate || new Date();
+  const predictedDate = new Date(base.getTime() + daysLeft * 86400000);
+  return { daysLeft, predictedDate, weeksLeft: Math.round(weeksLeft*10)/10 };
+}
+
+function recommendNextPackage(p) {
+  const freq = computeAttendanceFrequency(p);
+  if (!freq.sufficient || freq.sessionsPerWeek <= 0) return null;
+  // 抓同類別的所有代號，挑一個「用完大約落在 2~4 個月」之間，最貼近使用節奏的方案
+  const options = Object.entries(packageCodeTable).filter(([,info]) => info.category === p.category);
+  if (options.length === 0) return null;
+  const targetWeeks = { min: 8, max: 17 }; // 約 2~4 個月
+  let best = null, bestScore = Infinity;
+  options.forEach(([code, info]) => {
+    const weeks = info.sessions / freq.sessionsPerWeek;
+    const mid = (targetWeeks.min + targetWeeks.max) / 2;
+    const score = Math.abs(weeks - mid);
+    if (score < bestScore) { bestScore = score; best = { code, sessions: info.sessions, estWeeks: Math.round(weeks*10)/10 }; }
+  });
+  return best;
 }
 
 function savePool(id, data) {
@@ -4984,6 +5056,12 @@ function renderMembership() {
       const hay = (p.parent||'') + (p.students||[]).map(s=>s.name).join('') + (p.packageCode||'');
       if (kw && !hay.includes(kw)) return false;
     }
+    if (memFilter.remainMin !== '' || memFilter.remainMax !== '') {
+      const remaining = poolRemaining(p);
+      if (remaining === null) return false; // 未設定總堂數的方案池，不列入區間篩選結果
+      if (memFilter.remainMin !== '' && remaining < Number(memFilter.remainMin)) return false;
+      if (memFilter.remainMax !== '' && remaining > Number(memFilter.remainMax)) return false;
+    }
     return true;
   });
 
@@ -5039,6 +5117,7 @@ function renderMembership() {
       </td>
       <td style="white-space:nowrap">
         ${reviewBtn}${trialActions}
+        <button class="mem-btn" title="會員分析" onclick="openPoolAnalysisModal('${id}')">📊</button>
         <button class="mem-btn" onclick="openMemModal('${id}')">✏️</button>
         <button class="mem-btn red" onclick="deletePool('${id}')">🗑</button>
       </td>
@@ -5070,7 +5149,17 @@ function renderMembership() {
   const catOpts = cats.map(c=>`<option value="${c}" ${memFilter.category===c?'selected':''}>${c}</option>`).join('');
   const statusOpts = ['全部','進行中','待續約','已無方案','體驗生','待確認'].map(s=>`<option value="${s}" ${memFilter.status===s?'selected':''}>${s}</option>`).join('');
 
+  const importMeta = attendanceImportMeta[state.store];
+  const importBannerHtml = importMeta && importMeta.lastDate
+    ? `<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:${importMeta.overlapWarning?'#FEF3C7':'var(--color-green-bg)'};border:1px solid ${importMeta.overlapWarning?'var(--color-amber)':'var(--color-green)'};border-radius:var(--radius-md);margin-bottom:12px;font-size:13px">
+        📅 <b>${state.store==='flagship'?'旗艦館':'國圖館'}</b> 目前已匯入出席資料至：<b>${new Date(importMeta.lastDate).toLocaleDateString('zh-TW')}</b>
+        <span style="color:var(--color-text-tertiary);font-size:11px">（上次匯入時間：${new Date(importMeta.lastImportAt).toLocaleString('zh-TW')}）</span>
+        ${importMeta.overlapWarning ? '<span style="color:#B45309;font-weight:600">⚠️ 上次匯入日期比記錄早，請留意範圍是否重疊</span>' : ''}
+      </div>`
+    : `<div style="padding:8px 14px;background:var(--color-bg);border:1px dashed var(--color-border);border-radius:var(--radius-md);margin-bottom:12px;font-size:13px;color:var(--color-text-tertiary)">📅 ${state.store==='flagship'?'旗艦館':'國圖館'} 尚未匯入過出席表</div>`;
+
   document.getElementById('tab-membership').innerHTML = `
+    ${importBannerHtml}
     <div class="kpi-grid" style="margin-bottom:14px">
       <div class="kpi-card">
         <div class="kpi-label">待確認基準/異動</div>
@@ -5100,8 +5189,15 @@ function renderMembership() {
       <select onchange="memFilter.status=this.value;renderMembership()">${statusOpts}</select>
       <input type="text" placeholder="搜尋家長 / 孩子 / 方案代號" value="${memFilter.keyword}"
         oninput="memFilter.keyword=this.value;renderMembership()" style="min-width:180px">
+      <span style="font-size:12px;color:var(--color-text-secondary);white-space:nowrap">剩餘堂數</span>
+      <input type="number" placeholder="最少" value="${memFilter.remainMin}" style="width:64px"
+        oninput="memFilter.remainMin=this.value;renderMembership()">
+      <span style="color:var(--color-text-tertiary)">～</span>
+      <input type="number" placeholder="最多" value="${memFilter.remainMax}" style="width:64px"
+        oninput="memFilter.remainMax=this.value;renderMembership()">
       <button class="mem-btn" onclick="openPkgTableModal()">🗂️ 方案代號對照表</button>
       <button class="mem-btn" onclick="triggerAttendanceImport()">📥 匯入出席表</button>
+      <button class="mem-btn green" onclick="exportPoolsBackup()">📤 匯出備份</button>
       <button class="btn-primary" style="margin-left:auto" onclick="openMemModal(null)">＋ 新增方案池</button>
     </div>
     ${groupsHtml}`;
@@ -5163,6 +5259,111 @@ function matchPackageCode(text) {
 }
 
 // ── 出席表匯入（累加去重 + 異動偵測）──
+// ── 方案池備份匯出 ──
+async function exportPoolsBackup() {
+  const XLSX = await loadXLSX();
+  const all = Object.entries(membershipPools).filter(([,p]) => p.store === state.store);
+  if (all.length === 0) { showToast('目前沒有方案池資料可匯出', true); return; }
+
+  const rows = all.map(([id, p]) => {
+    const st = computePoolStatus(p);
+    const remaining = poolRemaining(p);
+    return {
+      '家長帳號': p.parent || '',
+      '類別': p.category || '',
+      '方案代號': p.packageCode || '',
+      '孩子清單': (p.students||[]).map(s=>s.name).join('、'),
+      '狀態': st.label,
+      '總堂數': p.totalSessions ?? '',
+      '已用堂數': p.usedSessions ?? 0,
+      '剩餘堂數': remaining ?? '',
+      '待收金額': p.amountDue ?? 0,
+      '是否體驗生': p.isTrial ? '是' : '否',
+      '體驗結果': p.trialResult || '',
+      '贈品/其他狀態': p.giftStatus || '',
+      '備註': p.note || '',
+      '待確認基準': p.needsReview ? '是' : '否',
+      '異動提醒': p.anomalyNote || '',
+      '出席紀錄筆數': (p.attendanceLog||[]).length,
+      '購買紀錄筆數': (p.purchaseLog||[]).length,
+      '最後更新': p.updatedAt ? new Date(p.updatedAt).toLocaleString('zh-TW') : '',
+      '方案池ID': id
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [
+    {wch:14},{wch:8},{wch:10},{wch:20},{wch:10},{wch:8},{wch:8},{wch:8},
+    {wch:10},{wch:10},{wch:10},{wch:16},{wch:20},{wch:10},{wch:26},{wch:18},{wch:14}
+  ];
+  const wb = XLSX.utils.book_new();
+  const storeName = state.store === 'flagship' ? '旗艦館' : '國圖館';
+  XLSX.utils.book_append_sheet(wb, ws, '方案池備份');
+
+  const now = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `方案池備份_${storeName}_${stamp}.xlsx`);
+  showToast(`✓ 已匯出 ${rows.length} 筆方案池備份`);
+}
+
+// ── 方案池分析 Modal ──
+function openPoolAnalysisModal(id) {
+  const p = membershipPools[id];
+  if (!p) return;
+  const studentsTxt = (p.students||[]).map(s=>s.name).join('、') || '（未填）';
+  document.getElementById('poolanalysis-title').textContent = `📊 ${p.parent}｜${p.category} 分析`;
+
+  const freq = computeAttendanceFrequency(p);
+  const depletion = predictDepletion(p);
+  const recommend = recommendNextPackage(p);
+  const remaining = poolRemaining(p);
+
+  let freqHtml, depletionHtml, recommendHtml;
+  if (!freq.sufficient) {
+    freqHtml = `<div style="color:var(--color-text-tertiary)">資料不足（目前累積 ${freq.count} 筆出席紀錄，至少需要 ${MIN_ATTENDANCE_FOR_ANALYSIS} 筆才開始估算）。持續匯入出席表即可累積。</div>`;
+    depletionHtml = `<div style="color:var(--color-text-tertiary)">資料不足，尚無法預估用完日期</div>`;
+    recommendHtml = `<div style="color:var(--color-text-tertiary)">資料不足，尚無法推薦適合堂數</div>`;
+  } else {
+    freqHtml = `<div>平均約每 <b>${freq.avgIntervalDays}</b> 天上一次課（約每週 <b>${freq.sessionsPerWeek}</b> 堂），根據 ${freq.count} 筆出席紀錄推算。</div>`;
+    if (remaining === null) {
+      depletionHtml = `<div style="color:var(--color-text-tertiary)">尚未設定總堂數，無法推估用完日期</div>`;
+    } else if (remaining <= 0) {
+      depletionHtml = `<div style="color:var(--color-red)">已無剩餘堂數</div>`;
+    } else if (depletion) {
+      depletionHtml = `<div>剩餘 <b>${remaining}</b> 堂，依目前節奏約 <b>${depletion.weeksLeft}</b> 週後用完，預估日期：<b>${depletion.predictedDate.toLocaleDateString('zh-TW')}</b></div>`;
+    } else {
+      depletionHtml = `<div style="color:var(--color-text-tertiary)">無法推估</div>`;
+    }
+    if (recommend) {
+      recommendHtml = `<div>依目前上課節奏，建議下次可考慮 <b>${recommend.code}</b>（${recommend.sessions}堂，約可上 ${recommend.estWeeks} 週）</div>`;
+    } else {
+      recommendHtml = `<div style="color:var(--color-text-tertiary)">「${p.category}」類別尚無方案代號可供比對，請先在方案代號對照表新增</div>`;
+    }
+  }
+
+  const purchaseLog = (p.purchaseLog || []).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const purchaseHtml = purchaseLog.length ? `
+    <table class="mem-table" style="margin-top:6px">
+      <thead><tr><th>日期</th><th>方案代號</th><th>堂數</th><th>金額</th><th>來源</th></tr></thead>
+      <tbody>${purchaseLog.map(l=>`<tr><td>${new Date(l.date).toLocaleDateString('zh-TW')}</td><td>${l.packageCode||'—'}</td><td>${l.sessions??'—'}</td><td>$${fmt(l.amount||0)}</td><td>${l.source||''}</td></tr>`).join('')}</tbody>
+    </table>` : `<div style="color:var(--color-text-tertiary);font-size:12px">尚無購買紀錄（僅記錄透過流水帳自動連動確認的購買）</div>`;
+
+  document.getElementById('poolanalysis-body').innerHTML = `
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">孩子：${studentsTxt}｜方案代號：${p.packageCode||'—'}</div>
+    <div class="mem-group-hdr"><span class="mem-group-title">🕐 上課頻率</span></div>
+    ${freqHtml}
+    <div class="mem-group-hdr" style="margin-top:10px"><span class="mem-group-title">📅 預估用完時間</span></div>
+    ${depletionHtml}
+    <div class="mem-group-hdr" style="margin-top:10px"><span class="mem-group-title">💡 建議下次購買堂數</span></div>
+    ${recommendHtml}
+    <div class="mem-group-hdr" style="margin-top:10px"><span class="mem-group-title">🧾 購買歷史</span></div>
+    ${purchaseHtml}
+    <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:10px">※ 頻率與預估僅供參考，資料量越多越準確；出席紀錄需靠持續匯入出席表累積。</div>
+  `;
+  document.getElementById('poolanalysis-modal').classList.add('open');
+}
+function closePoolAnalysisModal() { document.getElementById('poolanalysis-modal').classList.remove('open'); }
+
 function triggerAttendanceImport() {
   const inp = document.createElement('input');
   inp.type = 'file';
@@ -5190,6 +5391,7 @@ async function importAttendanceExcel(file) {
 
   let newCount = 0, dupCount = 0, newPoolCount = 0, anomalyCount = 0;
   const touchedPools = new Set();
+  let maxDateSeen = null; // 追蹤這次匯入檔案裡最新的日期，不論該列是否重複或無方案
 
   rows.forEach(row => {
     const course = String(row['課程'] || '').trim();
@@ -5199,6 +5401,11 @@ async function importAttendanceExcel(file) {
     const parent = String(row['會員'] || '').trim();
     const student = String(row['依屬'] || '').trim();
     const packageName = String(row['方案'] || '').trim();
+
+    if (dateStr) {
+      const d = new Date(dateStr);
+      if (!isNaN(d) && (!maxDateSeen || d > maxDateSeen)) maxDateSeen = d;
+    }
     if (!parent || !packageName || packageName === '沒有課卡') return; // 無方案的另外走「已無方案名單」，不進方案池累加
 
     // dedupe key：日期＋時間＋依屬＋課程（不含會員，因為同一課程同一時段依屬已足夠唯一）
@@ -5226,6 +5433,7 @@ async function importAttendanceExcel(file) {
         totalSessions: totalFromCode, usedSessions: 1,
         amountDue: 0, isTrial: false, giftStatus: '', note: '',
         needsReview: true, anomalyNote: '',
+        purchaseLog: [], attendanceLog: [{ date: dateStr, course }],
         createdMonth: state.month, createdAt: Date.now(), updatedAt: Date.now()
       };
       poolEntry = [id, membershipPools[id]];
@@ -5236,6 +5444,8 @@ async function importAttendanceExcel(file) {
       if (!(p.students||[]).some(s=>s.name===student)) {
         p.students = [...(p.students||[]), { name: student, shared: (p.students||[]).length>0 }];
       }
+      if (!p.attendanceLog) p.attendanceLog = [];
+      p.attendanceLog.push({ date: dateStr, course });
       // 異動偵測：方案名稱換了 或 已用堂數倒退
       if (matchedCode && p.packageCode && matchedCode !== p.packageCode) {
         p.anomalyNote = `方案代號由「${p.packageCode}」變為「${matchedCode}」，可能已續約，請確認新基準`;
@@ -5249,12 +5459,28 @@ async function importAttendanceExcel(file) {
     touchedPools.add(poolEntry[0]);
   });
 
+  if (maxDateSeen) {
+    const prevMeta = attendanceImportMeta[state.store];
+    const isNewer = !prevMeta || !prevMeta.lastDate || maxDateSeen > new Date(prevMeta.lastDate);
+    attendanceImportMeta[state.store] = {
+      lastDate: maxDateSeen.toISOString(),
+      lastImportAt: Date.now(),
+      lastFileRows: rows.length,
+      // 若這次匯入的最新日期比之前記錄的還舊，保留較早紀錄的匯入時間但仍更新提示用的最新日期範圍，方便你自己核對
+      overlapWarning: !isNewer
+    };
+  }
   save();
   syncToFirebase(true);
 
+  const storeName = state.store === 'flagship' ? '旗艦館' : '國圖館';
+  const lastDateTxt = maxDateSeen ? maxDateSeen.toLocaleDateString('zh-TW') : '（無法辨識日期）';
+  const overlapTxt = (attendanceImportMeta[state.store]?.overlapWarning)
+    ? `<div style="color:#B45309;margin-top:4px">⚠️ 這次匯入的最新日期比上次記錄的還早，可能與先前已匯入範圍重疊，請留意是否重複計算。</div>` : '';
   document.getElementById('attend-import-summary').innerHTML =
     `本次匯入共 <b>${rows.length}</b> 列，新增計入 <b>${newCount}</b> 筆（跳過重複 ${dupCount} 筆）。<br>
-     新建立方案池 <b>${newPoolCount}</b> 個（待確認基準），偵測到方案異動 <b>${anomalyCount}</b> 個。`;
+     新建立方案池 <b>${newPoolCount}</b> 個（待確認基準），偵測到方案異動 <b>${anomalyCount}</b> 個。<br>
+     📅 ${storeName}目前已匯入出席資料至：<b>${lastDateTxt}</b>${overlapTxt}`;
   const reviewList = [...touchedPools].map(id => membershipPools[id]).filter(p => p.needsReview || p.anomalyNote);
   document.getElementById('attend-import-review').innerHTML = reviewList.length ? `
     <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px">以下方案池需要你確認基準／異動：</div>
@@ -5332,12 +5558,23 @@ function confirmSalesPoolMatch() {
   const newTotal = totalOverride ? Number(totalOverride.value) || 0 : 0;
   const { rec, parentGuess, studentGuess, matchedCode, category, matchedPoolId } = salesPoolCandidate;
 
+  const purchaseEntry = {
+    date: new Date().toISOString(),
+    packageCode: matchedCode || '(未辨識代號，人工確認)',
+    sessions: matchedPoolId ? (newTotal - (poolRemaining(membershipPools[matchedPoolId]) || 0)) : newTotal,
+    amount: rec.amount,
+    source: '流水帳自動連動',
+    recId: rec.id
+  };
+
   if (matchedPoolId) {
+    const existingLog = membershipPools[matchedPoolId].purchaseLog || [];
     savePool(matchedPoolId, {
       totalSessions: newTotal,
       usedSessions: 0,
       packageCode: matchedCode || membershipPools[matchedPoolId].packageCode,
-      needsReview: false, anomalyNote: ''
+      needsReview: false, anomalyNote: '',
+      purchaseLog: [...existingLog, purchaseEntry]
     });
   } else {
     const id = genPoolId();
@@ -5348,6 +5585,7 @@ function confirmSalesPoolMatch() {
       totalSessions: newTotal, usedSessions: 0, amountDue: 0,
       isTrial: false, giftStatus: '', note: `流水帳自動建立：${rec.note||''}`,
       needsReview: false, anomalyNote: '',
+      purchaseLog: [purchaseEntry], attendanceLog: [],
       createdMonth: state.month, createdAt: Date.now(), updatedAt: Date.now()
     };
     save(); syncToFirebase(true);
