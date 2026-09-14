@@ -4208,14 +4208,6 @@ function renderLeads() {
   const staffList = getStaff();
   const allStatuses = ['追蹤中','已購買方案','不會購買'];
 
-  // ── toolbar ──
-  const staffOpts = allStaffsForOpts.map(s =>
-    `<option value="${s}" ${leadsFilter.staff===s?'selected':''}>${s}</option>`).join('');
-  const statusOpts = ['全部',...allStatuses].map(s =>
-    `<option value="${s}" ${leadsFilter.status===s?'selected':''}>${s}</option>`).join('');
-  const monthOpts = [0,1,2,3,4,5,6,7,8,9,10,11,12].map(m =>
-    `<option value="${m}" ${leadsFilter.month===m?'selected':''}>${m===0?'所有月份':m+'月'}</option>`).join('');
-
   // ── filter leads ──
   let filtered = Object.entries(leads).filter(([,l]) => {
     if (l.store !== state.store) return false;
@@ -4284,8 +4276,14 @@ function renderLeads() {
     ? orderedStaffs
     : orderedStaffs.filter(s => s === leadsFilter.staff);
 
-  // staffOpts 也用 orderedStaffs（含實際有資料的業務）
+  // 工具列選項：必須先建立實際名單，再產生 select，避免初始化時 ReferenceError 造成整頁空白。
   const allStaffsForOpts = ['全部', ...new Set([...staffList, ...staffsInFiltered])];
+  const staffOpts = allStaffsForOpts.map(s =>
+    `<option value="${s}" ${leadsFilter.staff===s?'selected':''}>${s}</option>`).join('');
+  const statusOpts = ['全部',...allStatuses].map(s =>
+    `<option value="${s}" ${leadsFilter.status===s?'selected':''}>${s}</option>`).join('');
+  const monthOpts = [0,1,2,3,4,5,6,7,8,9,10,11,12].map(m =>
+    `<option value="${m}" ${leadsFilter.month===m?'selected':''}>${m===0?'所有月份':m+'月'}</option>`).join('');
 
   let groupedHtml = '';
   let totalFiltered = 0;
