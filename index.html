@@ -1013,7 +1013,7 @@ function getMonthTargets(store, month) {
     } catch(e) {}
   }
 })();
-const CATS_2F = ['體驗課程','單堂(小象)','單堂(大象)','方案-小象15','方案-小象30','方案-小象48','方案-小象90','方案-大象30','方案-大象48','方案-大象90','冬夏令營','活動','商品','退款','方案補差額','幼兒園','放學趣','小象15+大象15','小象24+大象24','小象45+大象45','小象15','大象15','其他'];
+const CATS_2F = ['體驗課程','單堂(小象)','單堂(大象)','方案-小象12','方案-小象30','方案-小象48','方案-小象96','方案-大象30','方案-大象48','方案-大象96','冬夏令營','活動','商品','退款','方案補差額','幼兒園','放學趣','小象15+大象15','小象24+大象24','小象48+大象48','小象12','大象15','其他'];
 const CATS_4F = ['體驗','成人繪畫(單堂)','方案/入會','師資培訓','商品/畫布','包場包班','其他/補差額','冬夏令營','退費','退款'];
 const CATS_KG = ['體驗','成人繪畫(單堂)','方案/入會','師資培訓','商品/畫布','包場包班','其他/補差額','退費','退款'];
 // 自訂種類：依部門存放 { '2F': [...], '4F': [...], '國圖': [...] }
@@ -3821,27 +3821,9 @@ function saveStaffChanges() {
     });
   });
 
-  // Detect renames: compare old list vs new list by position for same-length, or by name diff
+  // 只更新業務名單，不自動重命名現有記錄（避免名單順序變動時批量錯改 staff 欄位）
   ['flagship','guotu'].forEach(store => {
-    const oldList = getMonthStaff(store, m);
     const newList = staffWorkingCopy[store].filter(Boolean);
-    // Find renames: same index, different name
-    const len = Math.min(oldList.length, newList.length);
-    for (let i = 0; i < len; i++) {
-      if (oldList[i] !== newList[i]) {
-        const oldName = oldList[i], newName = newList[i];
-        // Rename only records belonging to this month
-        state.records.forEach(r => {
-          if (r.month === m && r.staff === oldName) r.staff = newName;
-        });
-        // Rename in monthTargets for this month
-        const tgt = getMonthTargets(store, m);
-        if (tgt[oldName] !== undefined) {
-          tgt[newName] = tgt[oldName];
-          delete tgt[oldName];
-        }
-      }
-    }
     // Commit working copy to monthStaff for this month
     monthStaff[getMonthStaffKey(store, m)] = newList;
   });
