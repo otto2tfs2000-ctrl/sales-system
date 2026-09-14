@@ -164,8 +164,8 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 .leads-staff-stats { display:flex;align-items:center;gap:12px;font-size:12px;color:var(--color-text-secondary);flex-wrap:wrap; }
 .lead-status-badge { font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px; }
 .lead-status-追蹤中 { background:#EEF2FF;color:#4F46E5; }
-.lead-status-已成交 { background:var(--color-green-bg);color:var(--color-green); }
-.lead-status-已放棄 { background:#F3F4F6;color:#9CA3AF; }
+.lead-status-已成交,.lead-status-已購買方案 { background:var(--color-green-bg);color:var(--color-green); }
+.lead-status-已放棄,.lead-status-不會購買 { background:#F3F4F6;color:#9CA3AF; }
 /* ── 體驗預約 ── */
 .appt-notice-box { border-radius:var(--radius-md);padding:12px 16px;margin-bottom:10px;border:1px solid; }
 .appt-notice-today { background:#FFF7ED;border-color:#FED7AA;color:#C2410C; }
@@ -569,8 +569,8 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
     <div class="modal-title"><span style="style="color:var(--color-accent)"">👥</span> 業務人員管理</div>
     <div id="staff-modal-month-note" style="font-size:13px;color:var(--color-text-secondary);margin-bottom:4px;line-height:1.6"></div>
     <div style="font-size:12px;color:var(--color-amber);background:var(--color-amber-bg);border:1px solid #FCD34D;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:14px;line-height:1.6">
-      ⚠️ 此處修改只影響<strong>當前所選月份</strong>的業務名單，不會更動其他月份的歷史紀錄。<br>
-      若要改業務的名字（非新增/移除），請直接修改姓名欄位後儲存。
+      ⚠️ 此處只調整<strong>當前所選月份可選的業務名單</strong>。新增業務只會讓選單多一個選項，<strong>既有流水帳的業務歸屬不會自動變動</strong>。<br>
+      若要調整某筆歷史流水帳的業務，請到該筆流水帳按「編輯」後主動修改「業務」欄位。
     </div>
     <div style="font-size:12px;font-weight:600;color:var(--color-text-secondary);margin-bottom:8px;letter-spacing:.3px">旗艦館 2F+4F</div>
     <div id="staff-list-flagship"></div>
@@ -1930,6 +1930,11 @@ function renderDaily() {
     const rate2f = target2f > 0 ? cashIncome2f / target2f : null;
     const rate4f = target4f > 0 ? cashIncome4f / target4f : null;
 
+    // 幼兒園（福瑞斯特／葳格）當月加總 — 流水帳 category = '幼兒園'
+    const kinderTotal2f = filterRecs({ month: state.month, dept: '2F' })
+      .filter(r => r.category === '幼兒園')
+      .reduce((s,r) => s + r.amount, 0);
+
     // 並排顯示：現收 + 營收，字體大小一致
     const dualValue2f = `
       <div style="display:flex;gap:32px;align-items:flex-end;flex-wrap:wrap">
@@ -1965,6 +1970,12 @@ function renderDaily() {
              </div>
              ${miniBar(rate2f)}`
           : `<div class="kpi-sublabel">目標未設定</div>`}
+        ${kinderTotal2f > 0
+          ? `<div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--color-border-light);font-size:11px;color:var(--color-text-secondary);display:flex;align-items:baseline;gap:6px">
+              <span>🏫 幼兒園（福瑞斯特／葳格）</span>
+              <span style="font-weight:600;color:var(--color-text-primary)">$${fmt(kinderTotal2f)}</span>
+             </div>`
+          : ''}
       </div>
       <div class="kpi-card">
         <div class="kpi-label">4F 業績</div>
@@ -2228,6 +2239,36 @@ function saveLead(id, data) {
   leads[id] = { ...leads[id], ...data, updatedAt: Date.now() };
   save(); syncToFirebase(true);
 }
+// 體驗名單池：每一筆體驗預約都永久對應一筆 lead，作為歷史名單備存。
+function ensureApptLead(apptId) {
+  const a = appointments[apptId];
+  if (!a) return '';
+  if (a.leadId && leads[a.leadId]) return a.leadId;
+  const noteFirstLine = (a.note || '').split('\n')[0].trim();
+  const customer = a.parentName || a.childName || noteFirstLine || a.subject || `${a.dept}體驗 ${a.appointDate}`;
+  const lid = genLeadId();
+  const d = a.appointDate ? new Date(a.appointDate + 'T00:00:00') : null;
+  const createdMonth = d && !isNaN(d) ? d.getMonth()+1 : state.month;
+  const weeks = getWeeks(createdMonth);
+  const day = d && !isNaN(d) ? d.getDate() : 1;
+  const createdWeek = weeks.find(w => { const m=w.match(/(\d+)[–-](\d+)/); return m && day>=Number(m[1]) && day<=Number(m[2]); }) || weeks[0];
+  leads[lid] = {
+    store: a.store || state.store, staff: a.staff || '待分配', customer, dept: a.dept || '2F',
+    estimateAmt: 0, status: '追蹤中',
+    note: `【體驗名單】${a.subject||''} ${a.appointDate||''} ${a.appointTime||''}\n${a.note||''}`.trim(),
+    createdWeek, createdMonth, closedAmt: 0, source: '體驗預約', apptId, createdAt: a.createdAt || Date.now(), updatedAt: Date.now()
+  };
+  a.leadId = lid;
+  return lid;
+}
+function backfillAppointmentLeads() {
+  let changed = false;
+  Object.keys(appointments).forEach(id => {
+    const a = appointments[id];
+    if (!a.leadId || !leads[a.leadId]) { ensureApptLead(id); changed = true; }
+  });
+  if (changed) { save(); syncToFirebase(true); }
+}
 function deleteLead(id) {
   delete leads[id];
   save(); syncToFirebase(true);
@@ -2251,12 +2292,18 @@ function addLead(staff) {
 }
 function updateLeadStatus(id, status) {
   let closedAmt = leads[id]?.closedAmt || 0;
-  if (status === '已成交') {
-    const input = prompt('實際成交金額：', closedAmt || '');
+  if (status === '已購買方案') {
+    const input = prompt('實際購買／成交金額（可填 0）：', closedAmt || '');
     if (input === null) return;
     closedAmt = Number(input) || 0;
   }
-  saveLead(id, { status, closedAmt });
+  if (status === '不會購買') {
+    const reason = prompt('結案原因／備註（可空白）：', leads[id]?.closeReason || '');
+    if (reason === null) return;
+    saveLead(id, { status, closedAmt: 0, closeReason: reason, closedAt: Date.now() });
+  } else {
+    saveLead(id, { status, closedAmt, closedAt: status==='已購買方案' ? Date.now() : null });
+  }
   renderLeads(); renderWeekly();
 }
 function updateLeadNote(id, val) {
@@ -3460,7 +3507,10 @@ function openEditModal(id) {
   editingId = id;
   const rec = state.records.find(r => r.id === id);
   if (!rec) return;
-  const allStaff = [...getMonthStaff('flagship', rec.month), ...getMonthStaff('guotu', rec.month)];
+  // 歷史資料保護：即使原業務已從當月名單移除，也要保留在編輯選單中並預設選中。
+  // 如此編輯「金額／付款／備註」等其他欄位時，不會因業務不在現行名單而被瀏覽器自動換成第一個人。
+  const activeStaff = [...getMonthStaff('flagship', rec.month), ...getMonthStaff('guotu', rec.month)];
+  const allStaff = [...new Set([rec.staff, ...activeStaff].filter(Boolean))];
   const days = daysInMonth(rec.month);
   const depts = ['2F','4F','國圖'];
   const cats = getAllCats(rec.dept).map(c=>`<option value="${c}" ${c===rec.category?'selected':''}>${c}</option>`).join('');
@@ -3738,6 +3788,20 @@ function showSyncToast() {
   syncToastTimer = setTimeout(() => { el.style.opacity = '0'; }, 3000);
 }
 
+// 舊版追單狀態相容：轉成新版結案分類；並補齊過往所有體驗預約至名單池。
+(function migrateLeadStatusesAndAppointments(){
+  let changed = false;
+  Object.values(leads).forEach(l => {
+    if (l.status === '已成交') { l.status = '已購買方案'; changed = true; }
+    if (l.status === '已放棄') { l.status = '不會購買'; changed = true; }
+  });
+  Object.keys(appointments).forEach(id => {
+    const a=appointments[id];
+    if (!a.leadId || !leads[a.leadId]) { ensureApptLead(id); changed = true; }
+  });
+  if (changed) save();
+})();
+
 function renderAll() {
   const active = document.querySelector('.tab-content.active');
   if (!active) return;
@@ -3812,6 +3876,12 @@ function addStaffMember() {
 function saveStaffChanges() {
   const m = staffModalMonth;
 
+  // 歷史流水帳保護：業務名單管理只能改「可選名單」，不能動既有交易的 staff。
+  // 先記住每筆既有資料的業務歸屬，儲存名單後再強制核對／還原。
+  const historicalStaffSnapshot = new Map(
+    state.records.filter(r => r && r.id).map(r => [r.id, r.staff])
+  );
+
   // Collect final names (in case user edited inline without triggering onchange)
   ['flagship','guotu'].forEach(store => {
     const inputs = document.querySelectorAll(`#staff-list-${store} input[data-store="${store}"]`);
@@ -3823,9 +3893,17 @@ function saveStaffChanges() {
 
   // 只更新業務名單，不自動重命名現有記錄（避免名單順序變動時批量錯改 staff 欄位）
   ['flagship','guotu'].forEach(store => {
-    const newList = staffWorkingCopy[store].filter(Boolean);
-    // Commit working copy to monthStaff for this month
+    const newList = [...new Set(staffWorkingCopy[store].filter(Boolean))];
+    // Commit working copy to monthStaff for this month.
+    // 這裡只新增／移除選單選項，不以陣列位置去對應、重寫任何既有流水帳。
     monthStaff[getMonthStaffKey(store, m)] = newList;
+  });
+
+  // 雙重保護：若任何其他程式副作用碰到歷史 staff，這裡一律恢復。
+  state.records.forEach(r => {
+    if (r && r.id && historicalStaffSnapshot.has(r.id)) {
+      r.staff = historicalStaffSnapshot.get(r.id);
+    }
   });
 
   save();
@@ -4128,7 +4206,7 @@ let leadsFilter = { staff: '全部', status: '追蹤中', month: 0 };
 
 function renderLeads() {
   const staffList = getStaff();
-  const allStatuses = ['追蹤中','已成交','已放棄'];
+  const allStatuses = ['追蹤中','已購買方案','不會購買'];
 
   // ── toolbar ──
   const staffOpts = allStaffsForOpts.map(s =>
@@ -4148,22 +4226,22 @@ function renderLeads() {
   });
   // 排序：追蹤中優先，再依更新時間
   filtered.sort((a,b) => {
-    const order = {'追蹤中':0,'已成交':1,'已放棄':2};
+    const order = {'追蹤中':0,'已購買方案':1,'不會購買':2,'已成交':1,'已放棄':2};
     if (order[a[1].status] !== order[b[1].status]) return order[a[1].status]-order[b[1].status];
     return (b[1].updatedAt||0) - (a[1].updatedAt||0);
   });
 
   // ── summary KPI ──
   const tracking = Object.values(leads).filter(l=>l.store===state.store&&l.status==='追蹤中');
-  const closed   = Object.values(leads).filter(l=>l.store===state.store&&l.status==='已成交');
+  const closed   = Object.values(leads).filter(l=>l.store===state.store&&(l.status==='已購買方案'||l.status==='已成交'));
   const totalEst = tracking.reduce((s,l)=>s+(l.estimateAmt||0),0);
   const totalClosed = closed.reduce((s,l)=>s+(l.closedAmt||l.estimateAmt||0),0);
 
   // ── card builder helper ──
   function buildLeadCard(id, l) {
-    const statusClass = l.status==='已成交'?'status-成交':l.status==='已放棄'?'status-放棄':'status-追蹤';
+    const statusClass = (l.status==='已購買方案'||l.status==='已成交')?'status-成交':(l.status==='不會購買'||l.status==='已放棄')?'status-放棄':'status-追蹤';
     const wksAgo = l.createdWeek ? `建立於 ${l.createdMonth}月 ${l.createdWeek}` : '';
-    const closedLine = l.status==='已成交'
+    const closedLine = (l.status==='已購買方案'||l.status==='已成交')
       ? `<div style="font-size:12px;color:var(--color-green);font-weight:600;margin-bottom:4px">✓ 成交 $${fmt(l.closedAmt||0)}</div>`
       : '';
     return `<div class="lead-card ${statusClass}">
@@ -4180,13 +4258,14 @@ function renderLeads() {
         </div>
       </div>
       ${closedLine}
+      ${l.status==='不會購買'&&l.closeReason?`<div style="font-size:11px;color:var(--color-text-tertiary)">結案原因：${l.closeReason}</div>`:''}
       <div class="lead-card-note">
         <textarea placeholder="備註 / 跟進記錄..."
           onblur="updateLeadNote('${id}',this.value)">${l.note||''}</textarea>
       </div>
       <div class="lead-card-actions">
-        ${l.status!=='已成交'?`<button class="lead-btn green" onclick="updateLeadStatus('${id}','已成交')">✓ 成交</button>`:''}
-        ${l.status==='追蹤中'?`<button class="lead-btn" onclick="updateLeadStatus('${id}','已放棄')">✗ 放棄</button>`:''}
+        ${l.status!=='已購買方案'?`<button class="lead-btn green" onclick="updateLeadStatus('${id}','已購買方案')">✓ 已購買方案</button>`:''}
+        ${l.status==='追蹤中'?`<button class="lead-btn" onclick="updateLeadStatus('${id}','不會購買')">✗ 不會購買</button>`:''}
         ${l.status!=='追蹤中'?`<button class="lead-btn" onclick="updateLeadStatus('${id}','追蹤中')">↩ 重新追蹤</button>`:''}
         <button class="lead-btn red" onclick="if(confirm('確定刪除此追單？'))deleteLead('${id}')">刪除</button>
       </div>
@@ -4217,7 +4296,7 @@ function renderLeads() {
     totalFiltered += staffItems.length;
 
     const sTracking = staffItems.filter(([,l])=>l.status==='追蹤中').length;
-    const sClosed   = staffItems.filter(([,l])=>l.status==='已成交').length;
+    const sClosed   = staffItems.filter(([,l])=>l.status==='已購買方案'||l.status==='已成交').length;
     const sEst      = staffItems.filter(([,l])=>l.status==='追蹤中').reduce((s,[,l])=>s+(l.estimateAmt||0),0);
     const sCRate    = (sTracking+sClosed) > 0 ? (sClosed/(sTracking+sClosed)*100).toFixed(0)+'%' : '—';
 
@@ -4227,7 +4306,7 @@ function renderLeads() {
           <span class="leads-staff-name">👤 ${staff}</span>
           <div class="leads-staff-stats">
             <span>追蹤中 <strong>${sTracking}</strong></span>
-            <span>已成交 <strong style="color:var(--color-green)">${sClosed}</strong></span>
+            <span>已購買 <strong style="color:var(--color-green)">${sClosed}</strong></span>
             ${sEst>0?`<span>預估 <strong>$${fmt(sEst)}</strong></span>`:''}
             <span>成交率 <strong>${sCRate}</strong></span>
             <button class="lead-btn" style="font-size:11px;padding:2px 8px" onclick="addLead('${staff}')">＋ 新增</button>
@@ -4249,7 +4328,7 @@ function renderLeads() {
         <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">預估 $${fmt(totalEst)}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">已成交</div>
+        <div class="kpi-label">已購買方案</div>
         <div class="kpi-value" style="color:var(--color-green)">${closed.length} 件</div>
         <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">金額 $${fmt(totalClosed)}</div>
       </div>
@@ -4542,10 +4621,11 @@ function saveAppt() {
     leadId: '',
     createdAt: Date.now()
   };
+  ensureApptLead(id);
   save(); syncToFirebase(true);
   closeApptModal();
-  showToast('✓ 已新增體驗預約');
-  renderAppt();
+  showToast('✓ 已新增體驗預約，並同步存入名單池');
+  renderAppt(); renderLeads(); renderWeekly();
 }
 
 function updateApptStatus(id, status) {
@@ -4553,31 +4633,13 @@ function updateApptStatus(id, status) {
   appointments[id].status = status;
   appointments[id].updatedAt = Date.now();
 
-  // 已出席 / 已轉新單 → 自動建立追單 lead（若尚未建立）
-  if ((status === '已出席' || status === '已轉新單') && !appointments[id].leadId) {
-    const a = appointments[id];
-    // customer：用備註第一行，或科目，確保不是空白
-    const noteFirstLine = (a.note || '').split('\n')[0].trim();
-    const customer = noteFirstLine || a.subject || `${a.dept}體驗 ${a.appointDate}`;
-    const lid = genLeadId();
-    const weeks = getWeeks(state.month);
-    const currentWeek = weeks[state.weekIdx] || weeks[0];
-    // staff 若空白，用「待分配」標記，追單管理仍會顯示
-    const staff = a.staff || '待分配';
-    saveLead(lid, {
-      store: a.store,
-      staff,
-      customer,
-      dept: a.dept,
-      estimateAmt: 0,
-      status: '追蹤中',
-      note: `【體驗生】${a.subject||''} ${a.appointDate} ${a.appointTime}\n${a.note||''}`.trim(),
-      createdWeek: currentWeek,
-      createdMonth: state.month,
-      closedAmt: 0
-    });
-    appointments[id].leadId = lid;
-    showToast('✓ 已建立追單，可至「追單管理」查看');
+  // 所有體驗在建立預約時就已進名單池；狀態更新時同步名單資料。
+  const lid = ensureApptLead(id);
+  if (lid && leads[lid]) {
+    leads[lid].staff = appointments[id].staff || '待分配';
+    leads[lid].dept = appointments[id].dept || leads[lid].dept;
+    leads[lid].apptStatus = status;
+    leads[lid].updatedAt = Date.now();
   }
   save(); syncToFirebase(true);
   renderAppt();
@@ -4599,6 +4661,8 @@ function assignApptStaff(id, staff) {
   if (!appointments[id]) return;
   appointments[id].staff = staff;
   appointments[id].updatedAt = Date.now();
+  const lid = ensureApptLead(id);
+  if (lid && leads[lid]) leads[lid].staff = staff || '待分配';
   save(); syncToFirebase(true);
   renderAppt();
   if (staff) showToast(`✓ 已將預約分配給 ${staff}`);
@@ -4642,6 +4706,12 @@ function saveEditAppt(id) {
   appointments[id].staff       = document.getElementById('appt-staff').value;
   appointments[id].feeStatus   = document.querySelector('input[name="appt-fee"]:checked')?.value || '未付款';
   appointments[id].updatedAt   = Date.now();
+  const lid = ensureApptLead(id);
+  if (lid && leads[lid]) {
+    leads[lid].staff = appointments[id].staff || '待分配';
+    leads[lid].dept = appointments[id].dept;
+    leads[lid].updatedAt = Date.now();
+  }
   save(); syncToFirebase(true);
   closeApptModal();
   showToast('✓ 已更新預約');
