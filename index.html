@@ -517,6 +517,10 @@ input:focus, select:focus { border-color: var(--color-accent); box-shadow: 0 0 0
 .raffle-table th,.raffle-table td { padding:10px; text-align:left; border-bottom:1px solid var(--color-border-light); vertical-align:top; }
 .raffle-table th { background:var(--color-bg); white-space:nowrap; }
 .raffle-table td { overflow-wrap:anywhere; max-width:220px; }
+.raffle-pending-highlight { background:#FFF1F2; border-color:#FECDD3; }
+.raffle-table td.raffle-pending-highlight { background:#FFF1F2; }
+button.raffle-pending-highlight { background:#FFF1F2; border-color:#FECDD3; color:#9F1239; }
+button.raffle-pending-highlight:hover { background:#FFE4E6; border-color:#FDA4AF; color:#9F1239; }
 </style>
 </head>
 <body>
@@ -3928,7 +3932,7 @@ function renderRafflePending() {
   const sales=state.records.filter(r=>raffleSaleStore(r)===state.store && raffleDeptMatches(r.dept) && (raffleEntitlement(r,true)>0 || raffleAssigned(raffleTickets,r.id)>0) && raffleSaleMatches(r));
   el.innerHTML='<table class="raffle-table"><thead><tr><th>消費日期／項目</th><th>會員／家長</th><th>消費金額</th><th>應發／已登記／待補</th><th>操作</th></tr></thead><tbody>'+sales.map(r=>{
     const due=raffleEntitlement(r),assigned=r.raffleExcluded?0:raffleAssigned(raffleTickets,r.id),left=Math.max(0,due-assigned);
-    return `<tr><td>${raffleEscape((r.year||YEAR)+'/'+r.month+'/'+r.day)}<br>${raffleEscape(r.dept)} · ${raffleEscape(r.category)}</td><td>${raffleEscape(r.customer||'未填姓名')}</td><td>$${Number(r.amount||0).toLocaleString()}</td><td>${r.raffleExcluded?'不發放（不計張數）':due+'／'+assigned+'／'+left+' 張'}${assigned>due?'<br><span style="color:var(--color-red)">業績已異動，已發券數超額，請確認券號</span>':''}</td><td>${!r.raffleExcluded&&left?`<button class="sync-btn" data-raffle-source="${raffleEscape(r.id)}">補 ${left} 張券號</button>`:r.raffleExcluded?'':'已登記'}<button class="settings-btn" data-raffle-exclude="${raffleEscape(r.id)}">${r.raffleExcluded?'恢復發放':'不發放'}</button>${!r.customer?'<br><small>請先在業績補姓名</small>':''}</td></tr>`;
+    return `<tr><td>${raffleEscape((r.year||YEAR)+'/'+r.month+'/'+r.day)}<br>${raffleEscape(r.dept)} · ${raffleEscape(r.category)}</td><td>${raffleEscape(r.customer||'未填姓名')}</td><td>$${Number(r.amount||0).toLocaleString()}</td><td class="${!r.raffleExcluded&&left>0?'raffle-pending-highlight':''}">${r.raffleExcluded?'不發放（不計張數）':due+'／'+assigned+'／'+left+' 張'}${assigned>due?'<br><span style="color:var(--color-red)">業績已異動，已發券數超額，請確認券號</span>':''}</td><td>${!r.raffleExcluded&&left?`<button class="sync-btn raffle-pending-highlight" data-raffle-source="${raffleEscape(r.id)}">補 ${left} 張券號</button>`:r.raffleExcluded?'':'已登記'}<button class="settings-btn" data-raffle-exclude="${raffleEscape(r.id)}">${r.raffleExcluded?'恢復發放':'不發放'}</button>${!r.customer?'<br><small>請先在業績補姓名</small>':''}</td></tr>`;
   }).join('')+'</tbody></table>';
   if(!sales.length) el.innerHTML='<p style="font-size:13px;color:var(--color-text-secondary)">尚無符合的業績。請在流水帳登記個別消費；每日營收合計沒有會員資料，無法分配券號。</p>';
   const orphan=Object.values(raffleTickets).filter(r=>r.store===state.store && raffleDeptMatches(raffleTicketDept(r)) && raffleTicketIncluded(r) && r.sourceRecordId && !ids.has(r.sourceRecordId));
@@ -4113,7 +4117,7 @@ function renderRaffleList() {
   const rows=raffleFiltered();
   renderRafflePending(); refreshRaffleSourceInfo(); renderRaffleDrawResults();
   const totals=raffleTotals();
-  document.getElementById('raffle-kpis').innerHTML=`<div class="kpi-card"><div class="kpi-label">已發放票券總計</div><div class="kpi-value">${totals.issued} 張</div><div class="kpi-sub">已登記實際券號</div></div><div class="kpi-card"><div class="kpi-label">待補發票券總計</div><div class="kpi-value">${totals.pending} 張</div><div class="kpi-sub">應發但尚未補登券號</div></div><div class="kpi-card"><div class="kpi-label">票券數量合計</div><div class="kpi-value">${totals.total} 張</div><div class="kpi-sub">已發放＋待補發</div></div>`;
+  document.getElementById('raffle-kpis').innerHTML=`<div class="kpi-card"><div class="kpi-label">已發放票券總計</div><div class="kpi-value">${totals.issued} 張</div><div class="kpi-sub">已登記實際券號</div></div><div class="kpi-card raffle-pending-highlight"><div class="kpi-label">待補發票券總計</div><div class="kpi-value">${totals.pending} 張</div><div class="kpi-sub">應發但尚未補登券號</div></div><div class="kpi-card"><div class="kpi-label">票券數量合計</div><div class="kpi-value">${totals.total} 張</div><div class="kpi-sub">已發放＋待補發</div></div>`;
   body.innerHTML=rows.map(([id,r])=>`<tr><td>${raffleEscape(r.year)}<br>${raffleEscape(raffleTicketDept(r)||'未分類')}</td><td>${raffleEscape(r.prefix+r.start)}${r.start!==r.end?'～'+raffleEscape(r.prefix+r.end):''}<br><small>${raffleCount(r)} 張</small></td><td>${raffleEscape(r.owner)}${r.sourceRecordId?'<br><small>業績連動</small>':''}</td><td>${raffleEscape(r.child)}<br>${raffleEscape(r.phone)}</td><td>${raffleEscape(r.date)}</td><td>${raffleEscape(r.staff)}<br>${raffleEscape(r.note)}</td><td><button class="settings-btn" data-raffle-edit="${raffleEscape(id)}">修改</button><button class="settings-btn" data-raffle-delete="${raffleEscape(id)}">刪除</button></td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--color-text-secondary)">尚無符合的券號登記</td></tr>';
   body.querySelectorAll('[data-raffle-edit]').forEach(b=>b.onclick=()=>editRaffleTicket(b.dataset.raffleEdit));
   body.querySelectorAll('[data-raffle-delete]').forEach(b=>b.onclick=()=>deleteRaffleTicket(b.dataset.raffleDelete));
