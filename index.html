@@ -3936,7 +3936,7 @@ function renderRafflePending() {
   }).join('')+'</tbody></table>';
   if(!sales.length) el.innerHTML='<p style="font-size:13px;color:var(--color-text-secondary)">尚無符合的業績。請在流水帳登記個別消費；每日營收合計沒有會員資料，無法分配券號。</p>';
   const orphan=Object.values(raffleTickets).filter(r=>r.store===state.store && raffleDeptMatches(raffleTicketDept(r)) && raffleTicketIncluded(r) && r.sourceRecordId && !ids.has(r.sourceRecordId));
-  if(orphan.length) { const note=document.createElement('p'); note.style='color:var(--color-red);font-size:13px;margin-top:12px'; note.textContent='有 '+orphan.length+' 筆券號的來源業績已刪除，請在下方清單確認；已發券號會保留。'; el.appendChild(note); }
+  if(orphan.length) { const note=document.createElement('p'); note.style='color:var(--color-red);font-size:13px;margin-top:12px'; note.textContent='有 '+orphan.length+' 筆券號的來源業績已刪除，請在下方已發放清單點「轉綁新業績」，選擇重開的業績；原券號與發放日期會保留。'; el.appendChild(note); }
   el.querySelectorAll('[data-raffle-exclude]').forEach(b=>b.onclick=()=>{const sale=state.records.find(r=>r.id===b.dataset.raffleExclude);if(sale)setRaffleExcluded(sale.id,!sale.raffleExcluded);});
   el.querySelectorAll('[data-raffle-source]').forEach(b=>b.onclick=()=>linkRaffleSale(b.dataset.raffleSource));
 }
@@ -3962,7 +3962,7 @@ function refreshRaffleSourceInfo() {
     if(deptInput)deptInput.value=sale.dept||'';
     const due=raffleEntitlement(sale),left=Math.max(0,due-raffleAssigned(raffleTickets,sale.id,raffleEditId));
     el.textContent='連動業績：'+sale.month+'/'+sale.day+' '+sale.customer+'，消費 $'+Number(sale.amount).toLocaleString()+'，應發 '+due+' 張；本次最多可填 '+left+' 張。填起號會自動算結束号，亦可分批登記。';
-  } else el.textContent=linked?'來源業績已刪除，請確認這筆已發券號。':'可手動登記另行申請的摸彩券。';
+  } else el.textContent=linked?'來源業績已刪除，請在下方已發放清單點「轉綁新業績」，不必重新登記券號。':'可手動登記另行申請的摸彩券。';
 }
 function autofillRaffleEnd() {
   if(!raffleSourceId || raffleEditId) return;
@@ -4118,12 +4118,80 @@ function renderRaffleList() {
   renderRafflePending(); refreshRaffleSourceInfo(); renderRaffleDrawResults();
   const totals=raffleTotals();
   document.getElementById('raffle-kpis').innerHTML=`<div class="kpi-card"><div class="kpi-label">已發放票券總計</div><div class="kpi-value">${totals.issued} 張</div><div class="kpi-sub">已登記實際券號</div></div><div class="kpi-card raffle-pending-highlight"><div class="kpi-label">待補發票券總計</div><div class="kpi-value">${totals.pending} 張</div><div class="kpi-sub">應發但尚未補登券號</div></div><div class="kpi-card"><div class="kpi-label">票券數量合計</div><div class="kpi-value">${totals.total} 張</div><div class="kpi-sub">已發放＋待補發</div></div>`;
-  body.innerHTML=rows.map(([id,r])=>`<tr><td>${raffleEscape(r.year)}<br>${raffleEscape(raffleTicketDept(r)||'未分類')}</td><td>${raffleEscape(r.prefix+r.start)}${r.start!==r.end?'～'+raffleEscape(r.prefix+r.end):''}<br><small>${raffleCount(r)} 張</small></td><td>${raffleEscape(r.owner)}${r.sourceRecordId?'<br><small>業績連動</small>':''}</td><td>${raffleEscape(r.child)}<br>${raffleEscape(r.phone)}</td><td>${raffleEscape(r.date)}</td><td>${raffleEscape(r.staff)}<br>${raffleEscape(r.note)}</td><td><button class="settings-btn" data-raffle-edit="${raffleEscape(id)}">修改</button><button class="settings-btn" data-raffle-delete="${raffleEscape(id)}">刪除</button></td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--color-text-secondary)">尚無符合的券號登記</td></tr>';
+  body.innerHTML=rows.map(([id,r])=>`<tr><td>${raffleEscape(r.year)}<br>${raffleEscape(raffleTicketDept(r)||'未分類')}</td><td>${raffleEscape(r.prefix+r.start)}${r.start!==r.end?'～'+raffleEscape(r.prefix+r.end):''}<br><small>${raffleCount(r)} 張</small></td><td>${raffleEscape(r.owner)}${r.sourceRecordId?'<br><small>業績連動</small>':''}</td><td>${raffleEscape(r.child)}<br>${raffleEscape(r.phone)}</td><td>${raffleEscape(r.date)}</td><td>${raffleEscape(r.staff)}<br>${raffleEscape(r.note)}</td><td><button class="settings-btn" data-raffle-rebind="${raffleEscape(id)}">轉綁新業績</button>${r.sourceRecordId&&!state.records.some(s=>s.id===r.sourceRecordId)?'<small style="color:var(--color-red)">原業績已刪除，待轉綁</small>':''}<button class="settings-btn" data-raffle-edit="${raffleEscape(id)}">修改</button><button class="settings-btn" data-raffle-delete="${raffleEscape(id)}">刪除</button></td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--color-text-secondary)">尚無符合的券號登記</td></tr>';
+  body.querySelectorAll('[data-raffle-rebind]').forEach(b=>b.onclick=()=>openRaffleRebind(b.dataset.raffleRebind));
   body.querySelectorAll('[data-raffle-edit]').forEach(b=>b.onclick=()=>editRaffleTicket(b.dataset.raffleEdit));
   body.querySelectorAll('[data-raffle-delete]').forEach(b=>b.onclick=()=>deleteRaffleTicket(b.dataset.raffleDelete));
   document.getElementById('raffle-submit').disabled=raffleBusy;
   document.getElementById('raffle-sync-note').textContent=fbDb?(raffleReady?'雲端同步已連線':'正在連線摸彩券資料…'):(fbConfig?.apiKey?'雲端尚未連線，暫停登記':'目前僅儲存在本機');
 }
+
+let raffleRebindId='';
+function raffleRebindCandidates(ticket) {
+  return state.records.filter(s=>s.id!==ticket.sourceRecordId && raffleSaleStore(s)===ticket.store && String(s.year||YEAR)===String(ticket.year) && raffleEntitlement(s)>0 && s.customer?.trim()).sort((a,b)=>Number(b.customer===ticket.owner)-Number(a.customer===ticket.owner)||Number(b.month)-Number(a.month)||Number(b.day)-Number(a.day));
+}
+function openRaffleRebind(id) {
+  if(raffleBusy)return;
+  const ticket=raffleTickets[id];if(!ticket||ticket.store!==state.store)return;
+  let dialog=document.getElementById('raffle-rebind-dialog');
+  if(!dialog){dialog=document.createElement('dialog');dialog.id='raffle-rebind-dialog';dialog.style='margin:auto;padding:22px;border:1px solid var(--color-border);border-radius:12px;width:min(600px,calc(100vw - 28px));max-height:85vh;overflow:auto;background:var(--color-surface);color:var(--color-text-primary)';document.body.appendChild(dialog);}
+  raffleRebindId=id;
+  const candidates=raffleRebindCandidates(ticket);
+  dialog.innerHTML=`<div class="section-title">將已發放券號轉綁新業績</div><p style="font-size:13px;margin-bottom:12px">${raffleEscape(ticket.owner)}｜${raffleEscape(ticket.prefix+ticket.start)}～${raffleEscape(ticket.prefix+ticket.end)}｜共 ${raffleCount(ticket)} 張<br>原券號、發放日期、電話與孩子資料會保留，不新增票券。</p><label style="font-size:13px">選擇重開的業績<select id="raffle-rebind-target" style="width:100%;margin-top:8px" onchange="previewRaffleRebind()"><option value="">請選擇新業績</option>${candidates.map(r=>`<option value="${raffleEscape(r.id)}">${raffleEscape(r.month+'/'+r.day+' '+r.dept+' '+r.customer+' $'+Number(r.amount).toLocaleString()+' '+(r.invPrefix||'')+(r.invSuffix||'')+'（流水 '+r.id.slice(-6)+'）')}</option>`).join('')}</select></label><p id="raffle-rebind-preview" style="font-size:13px;margin:12px 0;white-space:pre-line"></p>${!candidates.length?'<p style="font-size:13px;color:var(--color-red)">沒有可轉綁的業績。請先新增同年度、同會館的已入帳業績，填寫姓名並設定發放票券。</p>':''}<div class="raffle-actions"><button class="sync-btn" id="raffle-rebind-confirm" onclick="confirmRaffleRebind()" disabled>確認轉綁</button><button class="settings-btn" onclick="closeRaffleRebind()">取消</button></div>`;
+  if(!dialog.open)dialog.showModal();
+}
+function closeRaffleRebind() { if(raffleBusy)return;document.getElementById('raffle-rebind-dialog')?.close();raffleRebindId=''; }
+function raffleRebindPlan(map,ticketId,targetId) {
+  const ticket=map[ticketId],target=state.records.find(s=>s.id===targetId);
+  if(!ticket||ticket.store!==state.store)return {error:'這筆券號已不存在或會館不符，請重新確認'};
+  if(!target||target.id===ticket.sourceRecordId||raffleSaleStore(target)!==ticket.store||String(target.year||YEAR)!==String(ticket.year)||!target.customer?.trim()||raffleEntitlement(target)<=0)return {error:'新業績已異動或不符合發券條件，請重新選擇'};
+  const due=raffleEntitlement(target),assigned=raffleAssigned(map,targetId,ticketId),count=raffleCount(ticket),excess=Math.max(0,assigned+count-due);
+  return {ticket,target,due,assigned,count,excess};
+}
+function previewRaffleRebind() {
+  const targetId=document.getElementById('raffle-rebind-target')?.value,el=document.getElementById('raffle-rebind-preview'),btn=document.getElementById('raffle-rebind-confirm');
+  if(!el||!btn)return;
+  if(!targetId){el.textContent='';btn.disabled=true;return;}
+  const plan=raffleRebindPlan(raffleTickets,raffleRebindId,targetId);
+  btn.disabled=!!plan.error||raffleBusy;
+  el.style.color=plan.error||plan.excess?'var(--color-red)':'var(--color-text-secondary)';
+  el.textContent=plan.error||('新業績：'+plan.target.customer+'｜'+plan.target.dept+'｜$'+Number(plan.target.amount).toLocaleString()+'\n應發 '+plan.due+' 張，已有 '+plan.assigned+' 張，本次轉入 '+plan.count+' 張。'+(plan.excess?'\n轉入後超出應發 '+plan.excess+' 張，請確認已發券是否需回收；系統會保留券號並顯示超額提醒。':'\n轉綁後將自動更新待補發數量。'));
+}
+function raffleRebindFingerprint(r) { return JSON.stringify([r?.sourceRecordId||'',r?.updatedAt||0,r?.start,r?.end,r?.prefix,r?.owner]); }
+async function rebindRaffleTicket(ticketId,targetId) {
+  if(raffleBusy)return false;
+  if(fbConfig?.apiKey&&(!fbDb||!raffleReady)){showToast('請等摸彩券雲端連線完成再轉綁',true);return false;}
+  const original=raffleRebindPlan(raffleTickets,ticketId,targetId);
+  if(original.error){showToast(original.error,true);return false;}
+  const description='將 '+original.ticket.owner+' 的 '+original.count+' 張已發券號，轉綁到 '+original.target.customer+'（'+original.target.month+'/'+original.target.day+' '+original.target.dept+'，$'+Number(original.target.amount).toLocaleString()+'）？\n原券號及發放日期會保留。'+(original.excess?'\n注意：轉綁後將超出應發 '+original.excess+' 張，請確認已發券的處理方式。':'');
+  if(!confirm(description))return false;
+  const expected=raffleRebindFingerprint(original.ticket),allowedExcess=original.excess,expectedTarget=JSON.stringify(original.target),now=Date.now();
+  let error='';
+  const mutate=current=>{
+    error='';const map=current||{},plan=raffleRebindPlan(map,ticketId,targetId);
+    if(plan.error){error=plan.error;return;}
+    if(raffleRebindFingerprint(plan.ticket)!==expected||JSON.stringify(plan.target)!==expectedTarget||plan.excess>allowedExcess){error='券號或新業績已被更新，請重新開啟轉綁並確認';return;}
+    const history=Array.isArray(plan.ticket.rebindHistory)?plan.ticket.rebindHistory:[];
+    const moved={...plan.ticket,sourceRecordId:targetId,dept:plan.target.dept||'',owner:plan.target.customer,staff:plan.target.staff||'',saleAmount:Number(plan.target.amount)||0,updatedAt:now,rebindHistory:[...history,{fromSourceRecordId:plan.ticket.sourceRecordId||'',toSourceRecordId:targetId,previousOwner:plan.ticket.owner||'',previousDept:raffleTicketDept(plan.ticket),at:now}]};
+    return {...map,[ticketId]:moved};
+  };
+  raffleBusy=true;renderRaffleList();previewRaffleRebind();
+  try {
+    if(fbDb){const result=await fbDb.ref('anniversaryTickets').transaction(mutate,undefined,false);if(!result.committed){showToast(error||'轉綁未完成，請重新確認',true);return false;}raffleTickets=result.snapshot.val()||{};try{raffleCache();}catch(e){showToast('雲端已轉綁，但本機備份失敗',true);}}
+    else {const next=mutate(raffleTickets);if(!next){showToast(error||'轉綁未完成',true);return false;}localStorage.setItem('anniversaryTickets',JSON.stringify(next));raffleTickets=next;}
+    raffleBusy=false;
+    if(raffleEditId===ticketId)editRaffleTicket(ticketId);
+    else if(raffleSourceId===targetId)refreshRaffleSourceInfo();
+    showToast('✓ 已將原本 '+original.count+' 張券號轉綁新業績，未新增票券');return true;
+  }catch(e){showToast('轉綁失敗：'+e.message,true);return false;}
+  finally {raffleBusy=false;renderRaffleList();previewRaffleRebind();}
+}
+async function confirmRaffleRebind() {
+  const targetId=document.getElementById('raffle-rebind-target')?.value;
+  if(!targetId||!raffleRebindId)return;
+  if(await rebindRaffleTicket(raffleRebindId,targetId))closeRaffleRebind();
+}
+
 function resetRaffleForm() { if(raffleBusy) return; raffleEditId=''; raffleSourceId=''; raffleFields.forEach(k=>document.getElementById('rt-'+k).value=''); document.getElementById('rt-year').value=new Date().getFullYear(); document.getElementById('rt-date').value=raffleToday(); document.getElementById('raffle-form-title').textContent='新增券號登記'; refreshRaffleSourceInfo(); }
 function editRaffleTicket(id) {
   if(raffleBusy) return;
@@ -4146,11 +4214,11 @@ async function raffleMutate(id,record) {
         if(record) map[id]=record; else delete map[id];
         return map;
       }, undefined, false);
-      if(!result.committed) { showToast(conflict?'券號重複，已登記給：'+conflict[1].owner:'已登記張數超過應發券數，或來源業績已異動，請重新確認',true); return false; }
+      if(!result.committed) { showToast(conflict?'券號重複，已登記給：'+conflict[1].owner+'；如為重開業績，請在已發放清單選「轉綁新業績」':'已登記張數超過應發券數，或來源業績已異動，請重新確認',true); return false; }
       raffleTickets=result.snapshot.val()||{};
     } else {
       conflict=record?raffleConflict(raffleTickets,record,id):null;
-      if(conflict) { showToast('券號重複，已登記給：'+conflict[1].owner,true); return false; }
+      if(conflict) { showToast('券號重複，已登記給：'+conflict[1].owner+'；如為重開業績，請在已發放清單選「轉綁新業績」',true); return false; }
       const allocationError=record?raffleAllocationError(raffleTickets,record,id):'';
       if(allocationError) { showToast(allocationError,true); return false; }
       const next={...raffleTickets}; if(record) next[id]=record; else delete next[id];
@@ -4162,7 +4230,7 @@ async function raffleMutate(id,record) {
   finally { raffleBusy=false; renderRaffleList(); }
 }
 async function saveRaffleTicket() {
-  const r={}; raffleFields.forEach(k=>r[k]=document.getElementById('rt-'+k).value.trim());
+  const r=raffleEditId?{...raffleTickets[raffleEditId]}:{}; raffleFields.forEach(k=>r[k]=document.getElementById('rt-'+k).value.trim());
   r.end=r.end||r.start;
   if(!/^\d+$/.test(r.start)||!/^\d+$/.test(r.end)||!Number.isSafeInteger(Number(r.start))||!Number.isSafeInteger(Number(r.end))||Number(r.end)<Number(r.start)||r.start.length!==r.end.length) { showToast('起訖號須為相同位數的純數字，且結束號不得小於起號',true); return; }
   if(!r.owner||!r.date||!/^\d{4}$/.test(r.year)||Number(r.year)<2000||Number(r.year)>2100) { showToast('請填寫有效年份、會員／家長姓名與發券日期',true); return; }
