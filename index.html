@@ -5176,16 +5176,33 @@ function buildApptCard(id, a) {
   </div>`;
 }
 
+// 以本地時區輸出 YYYY-MM-DD（toISOString 是 UTC，台灣早上 8 點前會變成前一天）
+function localYMD(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
 function renderAppt() {
-  const todayStr = new Date().toISOString().slice(0,10);
   const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+  const todayStr = localYMD(todayDate);
   const tomorrowDate = new Date(todayDate); tomorrowDate.setDate(tomorrowDate.getDate()+1);
-  const tomorrowStr = tomorrowDate.toISOString().slice(0,10);
+  const tomorrowStr = localYMD(tomorrowDate);
   const isFriday = new Date().getDay() === 5;
   const satDate = new Date(todayDate); satDate.setDate(satDate.getDate()+(6-todayDate.getDay()));
   const sunDate = new Date(satDate); sunDate.setDate(satDate.getDate()+1);
-  const satStr = satDate.toISOString().slice(0,10);
-  const sunStr = sunDate.toISOString().slice(0,10);
+  const satStr = localYMD(satDate);
+  const sunStr = localYMD(sunDate);
+
+  // 週結算：每週一 00:00 起算新的一週（週一～週日）
+  const weekStart = new Date(todayDate); weekStart.setDate(weekStart.getDate() - ((todayDate.getDay()+6)%7));
+  const nextWeekStart = new Date(weekStart); nextWeekStart.setDate(nextWeekStart.getDate()+7);
+  const nextWeekEnd = new Date(nextWeekStart); nextWeekEnd.setDate(nextWeekEnd.getDate()+6);
+  const lastWeekStart = new Date(weekStart); lastWeekStart.setDate(lastWeekStart.getDate()-7);
+  const weekStartStr = localYMD(weekStart);
+  const weekEndDate = new Date(weekStart); weekEndDate.setDate(weekEndDate.getDate()+6);
+  const weekEndStr = localYMD(weekEndDate);
+  const nextWeekStartStr = localYMD(nextWeekStart);
+  const nextWeekEndStr = localYMD(nextWeekEnd);
+  const fmtMD = s => s.slice(5).replace('-','/');
 
   // All store appointments filtered
   const storeAppts = Object.entries(appointments).filter(([,a]) => a.store === state.store);
@@ -5195,7 +5212,17 @@ function renderAppt() {
   const thisMonth = storeAppts.filter(([,a]) => a.appointDate && a.appointDate.slice(0,7) === todayStr.slice(0,7));
   const attended = storeAppts.filter(([,a])=>a.status==='已出席'||a.status==='已轉新單');
   const converted = storeAppts.filter(([,a])=>a.status==='已轉新單');
-  const upcoming = storeAppts.filter(([,a])=>a.status==='待確認'||a.status==='已確認');
+  const isOpen = a => a.status==='待確認'||a.status==='已確認';
+  // 待出席只算「今天以後」還沒來的；日期已過卻沒按出席/未到的另外列出，不再累積進來
+  const upcoming = storeAppts.filter(([,a])=>isOpen(a) && a.appointDate && a.appointDate >= todayStr);
+  const overdue  = storeAppts.filter(([,a])=>isOpen(a) && a.appointDate && a.appointDate < todayStr);
+  // 本週新增 / 上週新增：依「建立預約的時間」算，週一歸零
+  const createdIn = (from, to) => storeAppts.filter(([,a])=>a.createdAt && a.createdAt >= from.getTime() && a.createdAt < to.getTime());
+  const newThisWeek = createdIn(weekStart, nextWeekStart);
+  const newLastWeek = createdIn(lastWeekStart, weekStart);
+  // 本週 / 下週要來上課的人（依體驗日期）
+  const visitThisWeek = storeAppts.filter(([,a])=>a.status!=='未到' && a.appointDate>=weekStartStr && a.appointDate<=weekEndStr);
+  const visitNextWeek = storeAppts.filter(([,a])=>isOpen(a) && a.appointDate>=nextWeekStartStr && a.appointDate<=nextWeekEndStr);
   const convRate = attended.length > 0 ? (converted.length/attended.length*100).toFixed(0)+'%' : '—';
 
   // Notice blocks
@@ -5259,8 +5286,21 @@ function renderAppt() {
   document.getElementById('tab-appt').innerHTML = `
     <div class="kpi-grid" style="margin-bottom:12px">
       <div class="kpi-card">
-        <div class="kpi-label">待出席（本月）</div>
+        <div class="kpi-label">本週新增預約（${fmtMD(weekStartStr)}–${fmtMD(weekEndStr)}）</div>
+        <div class="kpi-value">${newThisWeek.length} 筆</div>
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">上週結算 ${newLastWeek.length} 筆</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">本週到訪</div>
+        <div class="kpi-value">${visitThisWeek.length} 位</div>
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">下週已排 ${visitNextWeek.length} 位</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">待出席（今天起）</div>
         <div class="kpi-value">${upcoming.length} 位</div>
+        ${overdue.length>0
+          ?`<div style="font-size:11px;color:var(--color-red);margin-top:2px;font-weight:600">⚠ ${overdue.length} 筆日期已過、未標出席/未到</div>`
+          :''}
         ${storeAppts.filter(([,a])=>!a.staff).length>0
           ?`<div style="font-size:11px;color:var(--color-amber);margin-top:2px;font-weight:600">⚠ ${storeAppts.filter(([,a])=>!a.staff).length} 筆待分配業務</div>`
           :''}
