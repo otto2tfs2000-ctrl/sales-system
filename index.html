@@ -798,8 +798,8 @@ button.raffle-pending-highlight:hover { background:#FFE4E6; border-color:#FDA4AF
         <datalist id="mem-package-list"></datalist>
       </div>
       <div class="appt-form-group full">
-        <label>孩子清單（多位用「、」分隔，代表共用此方案池）</label>
-        <input id="mem-students" type="text" placeholder="例：劉沐希、劉沐恩">
+        <label>共用學員（最多 5 位，共用此方案池堂數）</label>
+        <div id="mem-students-wrap" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px"></div>
       </div>
       <div class="appt-form-group">
         <label>總堂數</label>
@@ -5548,7 +5548,7 @@ function openMemModal(id) {
     document.getElementById('mem-parent').value = p.parent || '';
     document.getElementById('mem-category').value = p.category || '';
     document.getElementById('mem-package').value = p.packageCode || '';
-    document.getElementById('mem-students').value = (p.students||[]).map(s=>s.name).join('、');
+    renderSharedStudentInputs('mem-student', (p.students||[]).map(s=>s.name));
     document.getElementById('mem-total').value = (p.totalSessions ?? '');
     document.getElementById('mem-used').value = (p.usedSessions ?? '');
     document.getElementById('mem-amount').value = (p.amountDue ?? '');
@@ -5562,7 +5562,7 @@ function openMemModal(id) {
     document.getElementById('mem-parent').value = '';
     document.getElementById('mem-category').value = '';
     document.getElementById('mem-package').value = '';
-    document.getElementById('mem-students').value = '';
+    renderSharedStudentInputs('mem-student', []);
     document.getElementById('mem-total').value = '';
     document.getElementById('mem-used').value = '';
     document.getElementById('mem-amount').value = '';
@@ -5573,6 +5573,25 @@ function openMemModal(id) {
   }
   document.getElementById('mem-modal').classList.add('open');
 }
+// ── 共用學員欄位（方案池最多 5 人共用）──
+const MAX_SHARED_STUDENTS = 5;
+function renderSharedStudentInputs(prefix, names) {
+  const wrap = document.getElementById(prefix + 's-wrap');
+  if (!wrap) return;
+  const list = (names||[]).slice(0, MAX_SHARED_STUDENTS);
+  if ((names||[]).length > MAX_SHARED_STUDENTS) showToast(`共用學員超過 ${MAX_SHARED_STUDENTS} 位，只保留前 ${MAX_SHARED_STUDENTS} 位`, true);
+  wrap.innerHTML = Array.from({length: MAX_SHARED_STUDENTS}, (_, i) =>
+    `<input id="${prefix}-${i+1}" type="text" class="mem-input-sm" placeholder="學員${i+1}${i===0?'':'（選填）'}" value="${(list[i]||'').replace(/"/g,'&quot;')}" style="width:100%">`
+  ).join('');
+}
+function readSharedStudentInputs(prefix) {
+  const names = [];
+  for (let i = 1; i <= MAX_SHARED_STUDENTS; i++) {
+    const v = (document.getElementById(`${prefix}-${i}`)?.value || '').trim();
+    if (v && !names.includes(v)) names.push(v);
+  }
+  return names;
+}
 function closeMemModal() {
   document.getElementById('mem-modal').classList.remove('open');
   memEditingId = null;
@@ -5582,8 +5601,8 @@ function saveMemModal() {
   const category = document.getElementById('mem-category').value.trim();
   if (!parent || !category) { showToast('請填寫家長帳號與類別', true); return; }
   const isTrial = document.getElementById('mem-trial-yes').checked;
-  const studentsRaw = document.getElementById('mem-students').value.trim();
-  const students = studentsRaw ? studentsRaw.split(/[、,，]/).map(s=>s.trim()).filter(Boolean).map(name=>({name, shared: true})) : [];
+  const studentNames = readSharedStudentInputs('mem-student');
+  const students = studentNames.map(name=>({name, shared: studentNames.length > 1}));
   const totalRaw = document.getElementById('mem-total').value;
   const usedRaw = document.getElementById('mem-used').value;
   const amountRaw = document.getElementById('mem-amount').value;
@@ -6058,7 +6077,12 @@ async function importAttendanceExcel(file) {
       const [id, p] = poolEntry;
       // 加入孩子（若尚未列入）
       if (!(p.students||[]).some(s=>s.name===student)) {
-        p.students = [...(p.students||[]), { name: student, shared: (p.students||[]).length>0 }];
+        if ((p.students||[]).length < MAX_SHARED_STUDENTS) {
+          p.students = [...(p.students||[]), { name: student, shared: (p.students||[]).length>0 }];
+        } else {
+          p.anomalyNote = `「${student}」使用此方案池，但共用學員已滿 ${MAX_SHARED_STUDENTS} 位，請確認`;
+          anomalyCount++;
+        }
       }
       if (!p.attendanceLog) p.attendanceLog = [];
       p.attendanceLog.push({ date: dateStr, course });
@@ -6117,7 +6141,7 @@ function tryLinkSalesEntryToPool(rec) {
   const parts = (rec.customer || '').split('-').map(s=>s.trim()).filter(Boolean);
   if (parts.length === 0) return;
   const parentGuess = parts[0];
-  const studentGuess = parts[1] || '';
+  const studentGuesses = parts.slice(1, 1 + MAX_SHARED_STUDENTS);
 
   const matchedCode = matchPackageCode(rec.note || '') || matchPackageCode(rec.customer || '');
   const category = matchedCode ? packageCodeTable[matchedCode].category : null;
@@ -6131,7 +6155,7 @@ function tryLinkSalesEntryToPool(rec) {
     return true;
   });
 
-  salesPoolCandidate = { rec, parentGuess, studentGuess, matchedCode, category, candidates };
+  salesPoolCandidate = { rec, parentGuess, matchedCode, category, candidates };
 
   const purchasedSessions = matchedCode ? packageCodeTable[matchedCode].sessions : null;
   let bodyHtml = `<div>新增交易：<b>${rec.customer}</b>　$${fmt(rec.amount)}<br>備註：${rec.note || '（無）'}</div><hr style="margin:10px 0;border-color:var(--color-border)">`;
@@ -6161,7 +6185,16 @@ function tryLinkSalesEntryToPool(rec) {
       <div style="margin-top:6px;font-size:12px;color:var(--color-text-tertiary)">確認後將建立新方案池。</div>`;
     salesPoolCandidate.matchedPoolId = null;
   }
+  // 共用學員：既有方案池的學員 + 這筆交易客戶欄帶出的學員，最多 5 位
+  const existingNames = candidates.length > 0 ? (candidates[0][1].students||[]).map(s=>s.name) : [];
+  const sharedNames = [...new Set([...existingNames, ...studentGuesses])];
+  bodyHtml += `
+    <div style="margin-top:10px">
+      <label style="font-size:12px">共用學員（最多 ${MAX_SHARED_STUDENTS} 位）：</label>
+      <div id="salespool-students-wrap" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;margin-top:4px"></div>
+    </div>`;
   document.getElementById('salespool-body').innerHTML = bodyHtml;
+  renderSharedStudentInputs('salespool-student', sharedNames);
   document.getElementById('salespool-modal').classList.add('open');
 }
 function closeSalesPoolModal() {
@@ -6172,7 +6205,9 @@ function confirmSalesPoolMatch() {
   if (!salesPoolCandidate) return;
   const totalOverride = document.getElementById('salespool-total-override');
   const newTotal = totalOverride ? Number(totalOverride.value) || 0 : 0;
-  const { rec, parentGuess, studentGuess, matchedCode, category, matchedPoolId } = salesPoolCandidate;
+  const { rec, parentGuess, matchedCode, category, matchedPoolId } = salesPoolCandidate;
+  const studentNames = readSharedStudentInputs('salespool-student');
+  const students = studentNames.map(name => ({ name, shared: studentNames.length > 1 }));
 
   const purchaseEntry = {
     date: new Date().toISOString(),
@@ -6189,6 +6224,7 @@ function confirmSalesPoolMatch() {
       totalSessions: newTotal,
       usedSessions: 0,
       packageCode: matchedCode || membershipPools[matchedPoolId].packageCode,
+      students,
       needsReview: false, anomalyNote: '',
       purchaseLog: [...existingLog, purchaseEntry]
     });
@@ -6197,7 +6233,7 @@ function confirmSalesPoolMatch() {
     membershipPools[id] = {
       store: state.store, dept: state.dept || getDepts()[0],
       parent: parentGuess, category: category || '未分類',
-      packageCode: matchedCode || '', students: studentGuess ? [{name: studentGuess, shared:false}] : [],
+      packageCode: matchedCode || '', students,
       totalSessions: newTotal, usedSessions: 0, amountDue: 0,
       isTrial: false, giftStatus: '', note: `流水帳自動建立：${rec.note||''}`,
       needsReview: false, anomalyNote: '',
