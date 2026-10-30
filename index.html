@@ -3876,7 +3876,7 @@ function renderRaffle() {
   <div class="raffle-panel"><div class="section-title">業績連動｜待補券號</div><div id="raffle-pending" style="overflow:auto"></div></div>
   <div class="raffle-panel"><div class="section-title" id="raffle-form-title">新增券號登記</div><p id="raffle-source-info" style="font-size:13px;margin-bottom:12px;color:var(--color-text-secondary)"></p>
   <form onsubmit="event.preventDefault();saveRaffleTicket()"><div class="raffle-form">
-  ${[['year','活動年份','number'],['prefix','券號前綴（選填）','text'],['start','起始流水號 *','text'],['end','結束流水號（單張可留白）','text'],['owner','會員／家長姓名 *','text'],['child','孩子姓名（選填）','text'],['phone','聯絡電話（選填）','tel'],['date','發券日期 *','date'],['staff','經手人（選填）','text'],['note','備註（選填）','text']].map(([k,label,type])=>`<label>${label}<input id="rt-${k}" type="${type}" ${['year','start','owner','date'].includes(k)?'required':''} ${k==='year'?'min="2000" max="2100"':''} ${['start','end'].includes(k)?'inputmode="numeric" placeholder="例如 000101"':''}></label>`).join('')}
+  ${[['year','活動年份','number'],['prefix','券號前綴（選填；可填前置 0）','text'],['start','起始流水號 *','text'],['end','結束流水號（單張可留白）','text'],['owner','會員／家長姓名 *','text'],['child','孩子姓名（選填）','text'],['phone','聯絡電話（選填）','tel'],['date','發券日期 *','date'],['staff','經手人（選填）','text'],['note','備註（選填）','text']].map(([k,label,type])=>`<label>${label}<input id="rt-${k}" type="${type}" ${['year','start','owner','date'].includes(k)?'required':''} ${k==='year'?'min="2000" max="2100"':''} ${['start','end'].includes(k)?'inputmode="numeric" placeholder="例如 000101"':''}></label>`).join('')}
   <label>票券所屬部門<select id="rt-dept"><option value="">未分類</option><option value="2F">2F</option><option value="4F">4F</option><option value="國圖">國圖</option></select></label></div><div class="raffle-actions"><button type="submit" class="sync-btn" id="raffle-submit">儲存登記</button><button type="button" class="settings-btn" onclick="resetRaffleForm()">取消／清空</button><span id="raffle-sync-note" style="font-size:12px;color:var(--color-text-secondary)"></span></div></form></div>
   <div class="raffle-panel"><div class="raffle-actions" style="margin-top:0;margin-bottom:14px"><input id="raffle-search" style="flex:1;min-width:180px" placeholder="搜尋券號、會員、孩子、電話、年份或備註" oninput="renderRaffleList()"><button class="sync-btn" onclick="exportRaffleCSV()">匯出目前清單 CSV</button></div><div style="overflow:auto"><table class="raffle-table"><thead><tr><th>年份</th><th>券號／張數</th><th>會員／家長</th><th>孩子／電話</th><th>發券日期</th><th>經手人／備註</th><th>操作</th></tr></thead><tbody id="raffle-body"></tbody></table></div></div>`;
   document.getElementById('raffle-dept-filter').value=raffleDeptFilter;
@@ -3988,7 +3988,7 @@ function renderRaffleDraw() {
   const saved=raffleDraws[raffleDrawKey()],draft=raffleDrawDrafts[raffleDrawKey()];
   el.innerHTML=`<div class="section-title">六次抽獎｜中獎券號比對</div>
   <div class="raffle-actions" style="margin:0 0 12px"><label>活動年份 <input id="draw-year" type="number" min="2000" max="2100" style="width:90px" value="${raffleEscape(raffleDrawYear)}" onchange="changeRaffleDraw()"></label><label>抽獎場次 <select id="draw-round" onchange="changeRaffleDraw()">${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${String(n)===raffleDrawRound?'selected':''}>第 ${n} 次</option>`).join('')}</select></label><label>抽獎日期 <input id="draw-date" type="date" oninput="rememberRaffleDrawDraft();scheduleRaffleDrawPreview()"></label></div>
-  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:10px">可直接貼上總部公告，支援「獎項一行、下方多筆券號」，頓號、逗號及換行都可分隔；也支援「券號 | 獎項」。貼上後會自動預覽。截圖辨識後請核對文字。只查找目前會館已登記的會員；沒有對應登記的公告券號會自動忽略。</p>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:10px">可直接貼上總部公告，支援「獎項一行、下方多筆券號」，頓號、逗號及換行都可分隔；也支援「券號 | 獎項」。貼上後會自動預覽。截圖辨識後請核對文字。比對時會合併前綴與流水號，數字券號的前置 0 不影響比對。只查找目前會館已登記的會員；沒有對應登記的公告券號會自動忽略。</p>
   <div class="raffle-actions"><input id="draw-image" type="file" accept="image/png,image/jpeg,image/webp" onchange="recognizeRaffleAnnouncement(this.files[0])"><span id="draw-ocr-status" style="font-size:12px"></span></div>
   <textarea id="draw-text" rows="6" style="margin-top:12px;width:100%;padding:10px;border:1px solid var(--color-border);border-radius:var(--radius-sm);font-family:inherit" placeholder="000101 | 藝術禮盒&#10;000205 | 百貨禮券" oninput="rememberRaffleDrawDraft();scheduleRaffleDrawPreview()"></textarea>
   <div class="raffle-actions"><button class="settings-btn" onclick="loadRaffleFirstDraw()">載入 10/28 首抽公告</button><button class="sync-btn" id="draw-preview-btn" onclick="previewRaffleDraw()">預覽比對</button><button class="sync-btn" id="draw-save-btn" onclick="saveRaffleDraw()">確認並儲存本次公告</button><button class="settings-btn" onclick="exportRaffleWinners()">匯出本次得獎清單</button></div>
@@ -4095,9 +4095,13 @@ function loadRaffleFirstDraw() {
   raffleDrawDrafts[targetKey]={text:raffleFirstDrawText,date:'2026-10-28'};
   raffleDrawPreviews[targetKey]=parseRaffleAnnouncement(raffleFirstDrawText);renderRaffleDraw();
 }
+function raffleRangeContains(ticket,serial) {
+  const range=raffleRange(ticket);
+  return !!range&&range.prefix===serial.prefix&&serial.number>=range.start&&serial.number<=range.end;
+}
 function matchRaffleWinner(row,year=raffleDrawYear,store=state.store) {
   const serial=raffleSerial(row.serial);if(!serial)return {status:'券號格式錯誤',matches:[]};
-  const matches=Object.entries(raffleTickets).filter(([id,r])=>r.store===store && raffleTicketIncluded(r) && raffleDeptMatches(raffleTicketDept(r)) && String(r.year)===String(year) && String(r.prefix||'').toUpperCase()===serial.prefix && serial.number>=Number(r.start) && serial.number<=Number(r.end)).map(([id,r])=>({id,...r}));
+  const matches=Object.entries(raffleTickets).filter(([id,r])=>r.store===store && raffleTicketIncluded(r) && raffleDeptMatches(raffleTicketDept(r)) && String(r.year)===String(year) && raffleRangeContains(r,serial)).map(([id,r])=>({id,...r}));
   return {status:matches.length===1?'已找到得獎會員':matches.length>1?'歸屬重複，待確認':'未找到歸屬（可能為其他會館或尚未登記）',matches};
 }
 function previewRaffleDraw() {
@@ -4166,8 +4170,18 @@ function exportRaffleWinners() {
 }
 
 function raffleCount(r) { return Number(r.end)-Number(r.start)+1; }
+function raffleRange(r) {
+  const start=raffleSerial(String(r.prefix||'')+String(r.start||'')),end=raffleSerial(String(r.prefix||'')+String(r.end||''));
+  if(!start||!end||start.prefix!==end.prefix||end.number<start.number)return null;
+  return {prefix:start.prefix,start:start.number,end:end.number};
+}
 function raffleConflict(map,record,id) {
-  return Object.entries(map).find(([key,r])=>key!==id && r.store===record.store && Number(r.year)===Number(record.year) && String(r.prefix||'').toUpperCase()===record.prefix.toUpperCase() && Number(r.start)<=Number(record.end) && Number(r.end)>=Number(record.start));
+  const candidate=raffleRange(record);if(!candidate)return null;
+  return Object.entries(map).find(([key,r])=>{
+    if(key===id||r.store!==record.store||Number(r.year)!==Number(record.year))return false;
+    const existing=raffleRange(r);
+    return existing&&existing.prefix===candidate.prefix&&existing.start<=candidate.end&&existing.end>=candidate.start;
+  });
 }
 function raffleFiltered() {
   const q=(document.getElementById('raffle-search')?.value||'').trim().toLowerCase();
@@ -4176,8 +4190,8 @@ function raffleFiltered() {
     if(!q) return true;
     const text=[r.year,r.prefix+r.start,r.prefix+r.end,r.owner,r.child,r.phone,r.staff,r.note,r.date].join(' ').toLowerCase();
     if(text.includes(q)) return true;
-    const match=q.match(/^(.*?)(\d+)$/);
-    return match && (!match[1] || match[1]===(r.prefix||'').toLowerCase()) && Number(match[2])>=Number(r.start) && Number(match[2])<=Number(r.end);
+    const serial=raffleSerial(q);
+    return serial&&raffleRangeContains(r,serial);
   }).sort((a,b)=>b[1].date.localeCompare(a[1].date)||b[1].updatedAt-a[1].updatedAt);
 }
 function renderRaffleList() {
@@ -4302,6 +4316,7 @@ async function saveRaffleTicket() {
   r.end=r.end||r.start;
   if(!/^\d+$/.test(r.start)||!/^\d+$/.test(r.end)||!Number.isSafeInteger(Number(r.start))||!Number.isSafeInteger(Number(r.end))||Number(r.end)<Number(r.start)||r.start.length!==r.end.length) { showToast('起訖號須為相同位數的純數字，且結束號不得小於起號',true); return; }
   if(!r.owner||!r.date||!/^\d{4}$/.test(r.year)||Number(r.year)<2000||Number(r.year)>2100) { showToast('請填寫有效年份、會員／家長姓名與發券日期',true); return; }
+  if(!raffleRange(r)){showToast('請確認券號前綴與起訖號格式，可使用英文字母、數字或連字號',true);return;}
   r.store=state.store; r.updatedAt=Date.now();
   if(raffleSourceId) {
     const sale=state.records.find(x=>x.id===raffleSourceId);
