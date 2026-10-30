@@ -3987,11 +3987,11 @@ function renderRaffleDraw() {
   const el=document.getElementById('raffle-draw-panel');if(!el)return;
   const saved=raffleDraws[raffleDrawKey()],draft=raffleDrawDrafts[raffleDrawKey()];
   el.innerHTML=`<div class="section-title">六次抽獎｜中獎券號比對</div>
-  <div class="raffle-actions" style="margin:0 0 12px"><label>活動年份 <input id="draw-year" type="number" min="2000" max="2100" style="width:90px" value="${raffleEscape(raffleDrawYear)}" onchange="changeRaffleDraw()"></label><label>抽獎場次 <select id="draw-round" onchange="changeRaffleDraw()">${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${String(n)===raffleDrawRound?'selected':''}>第 ${n} 次</option>`).join('')}</select></label><label>抽獎日期 <input id="draw-date" type="date" oninput="rememberRaffleDrawDraft()"></label></div>
-  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:10px">每行填「券號 | 獎項」，例如：000101 | 藝術禮盒。也可上傳公告截圖辨識文字，再核對券號與獎項。只查找目前會館已登記的會員；沒有對應登記的公告券號會自動忽略。</p>
+  <div class="raffle-actions" style="margin:0 0 12px"><label>活動年份 <input id="draw-year" type="number" min="2000" max="2100" style="width:90px" value="${raffleEscape(raffleDrawYear)}" onchange="changeRaffleDraw()"></label><label>抽獎場次 <select id="draw-round" onchange="changeRaffleDraw()">${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${String(n)===raffleDrawRound?'selected':''}>第 ${n} 次</option>`).join('')}</select></label><label>抽獎日期 <input id="draw-date" type="date" oninput="rememberRaffleDrawDraft();scheduleRaffleDrawPreview()"></label></div>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:10px">可直接貼上總部公告，支援「獎項一行、下方多筆券號」，頓號、逗號及換行都可分隔；也支援「券號 | 獎項」。貼上後會自動預覽。截圖辨識後請核對文字。只查找目前會館已登記的會員；沒有對應登記的公告券號會自動忽略。</p>
   <div class="raffle-actions"><input id="draw-image" type="file" accept="image/png,image/jpeg,image/webp" onchange="recognizeRaffleAnnouncement(this.files[0])"><span id="draw-ocr-status" style="font-size:12px"></span></div>
-  <textarea id="draw-text" rows="6" style="margin-top:12px;width:100%;padding:10px;border:1px solid var(--color-border);border-radius:var(--radius-sm);font-family:inherit" placeholder="000101 | 藝術禮盒&#10;000205 | 百貨禮券" oninput="rememberRaffleDrawDraft()"></textarea>
-  <div class="raffle-actions"><button class="sync-btn" id="draw-preview-btn" onclick="previewRaffleDraw()">預覽比對</button><button class="sync-btn" id="draw-save-btn" onclick="saveRaffleDraw()">確認並儲存本次公告</button><button class="settings-btn" onclick="exportRaffleWinners()">匯出本次得獎清單</button></div>
+  <textarea id="draw-text" rows="6" style="margin-top:12px;width:100%;padding:10px;border:1px solid var(--color-border);border-radius:var(--radius-sm);font-family:inherit" placeholder="000101 | 藝術禮盒&#10;000205 | 百貨禮券" oninput="rememberRaffleDrawDraft();scheduleRaffleDrawPreview()"></textarea>
+  <div class="raffle-actions"><button class="settings-btn" onclick="loadRaffleFirstDraw()">載入 10/28 首抽公告</button><button class="sync-btn" id="draw-preview-btn" onclick="previewRaffleDraw()">預覽比對</button><button class="sync-btn" id="draw-save-btn" onclick="saveRaffleDraw()">確認並儲存本次公告</button><button class="settings-btn" onclick="exportRaffleWinners()">匯出本次得獎清單</button></div>
   <div id="draw-results" style="overflow:auto;margin-top:14px"></div>`;
   document.getElementById('draw-text').value=draft?.text??saved?.text??'';
   document.getElementById('draw-date').value=draft?.date??saved?.date??'';
@@ -4015,21 +4015,85 @@ function raffleSerial(value) {
   if(!m||!Number.isSafeInteger(Number(m[2])))return null;
   return {serial:s,prefix:m[1].toUpperCase(),number:Number(m[2]),key:m[1].toUpperCase()+':'+Number(m[2])};
 }
+
 function parseRaffleAnnouncement(text) {
-  const rows=[],errors=[],seen=new Set();
-  String(text).normalize('NFKC').split(/\r?\n/).forEach((line,index)=>{
-    line=line.trim();if(!line)return;
+  const rows=[],errors=[],seen=new Set(),ignoredLines=[];
+  let currentPrize='';
+  const cleanPrize=value=>String(value).trim().replace(/^[^\p{L}\p{N}]+/u,'').replace(/[:：]\s*$/,'').trim();
+  const serialList=(value,minDigits=3)=>{
+    const parts=String(value).trim().replace(/^(?:券號|流水號|獎券號碼|中獎號碼)\s*[:：]?\s*/,'').split(/[、,，;；\s]+/).filter(Boolean);
+    if(!parts.length)return null;
+    const parsed=parts.map(v=>raffleSerial(v));
+    return parsed.every(v=>v&&String(v.serial).match(/\d+$/)[0].length>=minDigits)?parsed:null;
+  };
+  const add=(serials,prize,index)=>{
+    const title=cleanPrize(prize);
+    if(!title){errors.push('第 '+(index+1)+' 行缺少獎項名稱');return;}
+    serials.forEach(parsed=>{
+      if(seen.has(parsed.key)){errors.push('第 '+(index+1)+' 行券號重複：'+parsed.serial);return;}
+      seen.add(parsed.key);rows.push({serial:parsed.serial,prize:title});
+    });
+  };
+  String(text).normalize('NFKC').split(/\r?\n/).forEach((raw,index)=>{
+    const line=raw.trim();if(!line)return;
     if(/^(券號|流水號|獎券號碼)\s*[|｜,，\t]\s*獎項$/.test(line))return;
-    let parts=line.split(/\s*[|｜\t,，]\s*/);let serial,prize;
-    if(parts.length===2){ if(raffleSerial(parts[0])){serial=parts[0];prize=parts[1];}else if(raffleSerial(parts[1])){serial=parts[1];prize=parts[0];} }
-    if(!serial){const a=line.match(/^([A-Za-z-]*\d+)\s+(.+)$/),b=line.match(/^(.+?)\s+([A-Za-z-]*\d+)$/);if(a){serial=a[1];prize=a[2];}else if(b){serial=b[2];prize=b[1];}}
-    const parsed=raffleSerial(serial);
-    if(!parsed||!prize?.trim()){errors.push('第 '+(index+1)+' 行請整理為「券號 | 獎項」：'+line);return;}
-    if(seen.has(parsed.key)){errors.push('第 '+(index+1)+' 行券號重複：'+serial);return;}
-    seen.add(parsed.key);rows.push({serial:parsed.serial,prize:prize.trim()});
+    // 明確的欄位分隔格式：一行可包含同一獎項的多張券。
+    const columns=line.split(/\s*[|｜\t]\s*/);
+    if(columns.length===2){
+      const first=serialList(columns[0],1),last=serialList(columns[1],1);
+      if(first&&!last){add(first,columns[1],index);currentPrize=cleanPrize(columns[1]);return;}
+      if(last&&!first){add(last,columns[0],index);currentPrize=cleanPrize(columns[0]);return;}
+      errors.push('第 '+(index+1)+' 行無法分辨券號與獎項：'+line);return;
+    }
+    // 保留先前 CSV 單列輸入相容性。
+    const csv=line.split(/\s*[,，]\s*/);
+    if(csv.length===2){const first=serialList(csv[0]),last=serialList(csv[1]);if(first&&!last){add(first,csv[1],index);return;}if(last&&!first){add(last,csv[0],index);return;}}
+    const serials=serialList(line);
+    if(serials){if(!currentPrize){errors.push('第 '+(index+1)+' 行券號前缺少獎項名稱：'+line);return;}add(serials,currentPrize,index);return;}
+    // 三位以上號碼才視為空白分隔的券號，避免把 Switch 2 或門票 2 張當作券號。
+    const first=line.match(/^([A-Za-z-]*\d{3,})\s+(.+)$/),last=line.match(/^(.+?)\s+([A-Za-z-]*\d{3,})$/);
+    if(first){add([raffleSerial(first[1])],first[2],index);currentPrize=cleanPrize(first[2]);return;}
+    if(last){add([raffleSerial(last[2])],last[1],index);currentPrize=cleanPrize(last[1]);return;}
+    // 一般宣傳開場及日期不是獎項。
+    if(/中獎名單|得獎名單|快來核對|幸運得主|直播|抽獎日期|活動日期|^\d{1,2}[\/月]\d{1,2}/.test(line)){ignoredLines.push(index+1);currentPrize='';return;}
+    // OCR 容易把 0 認成 O；保留可疑行讓使用者核對，絕不自動改號。
+    if(/^[\d\s、,，;；OolI]+$/.test(line)||/^\d[^\p{Script=Han}]*$/u.test(line)){errors.push('第 '+(index+1)+' 行疑似券號辨識不完整，請核對：'+line);return;}
+    if(/[\p{L}]/u.test(line)){currentPrize=cleanPrize(line);return;}
+    errors.push('第 '+(index+1)+' 行無法辨識：'+line);
   });
-  if(!rows.length&&!errors.length)errors.push('請輸入至少一筆中獎券號與獎項');
-  return {rows,errors};
+  if(!rows.length&&!errors.length)errors.push('尚未辨識到券號，請貼上「獎項＋券號清單」或「券號 | 獎項」');
+  return {rows,errors,ignoredLines};
+}
+let raffleDrawPreviewTimer=null;
+function scheduleRaffleDrawPreview() {
+  clearTimeout(raffleDrawPreviewTimer);
+  const key=raffleDrawKey();
+  raffleDrawPreviewTimer=setTimeout(()=>{if(raffleDrawKey()===key&&!raffleOcrBusy)previewRaffleDraw();},400);
+}
+const raffleFirstDrawText=`26週年慶好禮分波抽出，10/28 中獎名單出爐啦！快來核對你的抽獎號碼，看看幸運得主是不是你 🎁
+
+🎮 Switch 2
+00196
+
+🧹 Roborock Q8 Max Pro 掃拖機器人
+07605
+
+🎟️ 九九峰門票 2 張
+00364、00469、04582、04356、14389
+
+🦖 恐龍 Art Box
+13188、04976、07307、04805、13559、13133
+
+🛍️ 購物金 200 元
+07636、00160、13502、00024、13090`;
+function loadRaffleFirstDraw() {
+  if(raffleOcrBusy||raffleDrawSaving)return;
+  const targetKey=state.store+'_2026_1';
+  const old=raffleDrawDrafts[targetKey]?.text||raffleDraws[targetKey]?.text;
+  if(old&&old!==raffleFirstDrawText&&!confirm('載入 10/28 第一次抽獎公告至輸入區？現有已儲存公告會保留，按「確認並儲存」後才更新。'))return;
+  raffleDrawYear='2026';raffleDrawRound='1';
+  raffleDrawDrafts[targetKey]={text:raffleFirstDrawText,date:'2026-10-28'};
+  raffleDrawPreviews[targetKey]=parseRaffleAnnouncement(raffleFirstDrawText);renderRaffleDraw();
 }
 function matchRaffleWinner(row,year=raffleDrawYear,store=state.store) {
   const serial=raffleSerial(row.serial);if(!serial)return {status:'券號格式錯誤',matches:[]};
@@ -4043,13 +4107,17 @@ function previewRaffleDraw() {
 function renderRaffleDrawResults() {
   const el=document.getElementById('draw-results');if(!el)return;
   const key=raffleDrawKey(),saved=raffleDraws[key],preview=raffleDrawPreviews[key];
-  const rows=preview?.rows||saved?.rows||[],errors=preview?.errors||[];
+  const draft=raffleDrawDrafts[key];
+  const rows=preview?.rows||(draft?[]:saved?.rows)||[],errors=preview?.errors||[];
   const localRows=rows.filter(row=>matchRaffleWinner(row).matches.length>0);
   const matched=localRows.filter(row=>matchRaffleWinner(row).matches.length===1).length;
-  el.innerHTML=`<p style="font-size:13px;margin-bottom:10px">第 ${raffleDrawRound} 次：${preview?'預覽，尚未儲存':saved?'已儲存公告':'尚未登記公告'}｜本館中獎 ${matched} 筆${localRows.length>matched?'，另有 '+(localRows.length-matched)+' 筆歸屬重複待確認':''}${raffleDrawDrafts[key]&&!preview?'（輸入內容尚未預覽）':''}</p>`;
+  const scope=raffleDeptFilter==='all'?'本館全部部門':raffleDeptFilter==='unknown'?'本館未分類':'本館 '+raffleDeptFilter;
+  const loading=!!fbConfig?.apiKey&&(!fbDb||!raffleReady);
+  el.innerHTML=`<p style="font-size:13px;margin-bottom:10px">第 ${raffleDrawRound} 次：${preview?'預覽，尚未儲存':saved?'已儲存公告':'尚未登記公告'}｜已辨識 ${new Set(rows.map(r=>r.prize)).size} 個獎項、${rows.length} 筆券號｜${raffleEscape(scope)}：${loading?'券號資料尚未連線，結果暫供參考':'中獎 '+matched+' 筆'}${localRows.length>matched?'，另有 '+(localRows.length-matched)+' 筆歸屬重複待確認':''}${raffleDrawDrafts[key]&&!preview?'（輸入內容尚未預覽）':''}</p>`;
+  if(raffleDeptFilter!=='all'){const hint=document.createElement('p');hint.style='font-size:12px;margin-bottom:10px';hint.textContent='目前只顯示 '+scope+'；要一起核對 2F、4F，請將上方部門篩選改為「全部」。';el.appendChild(hint);}
   errors.forEach(message=>{const p=document.createElement('p');p.style='font-size:12px;color:var(--color-red);margin-bottom:5px';p.textContent=message;el.appendChild(p);});
   const table=document.createElement('table');table.className='raffle-table';
-  table.innerHTML='<thead><tr><th>中獎券號</th><th>獎項</th><th>會員／家長</th><th>孩子</th><th>聯絡電話</th><th>比對狀態</th></tr></thead><tbody>'+localRows.map(row=>{const m=matchRaffleWinner(row),r=m.matches.length===1?m.matches[0]:null;return `<tr><td>${raffleEscape(row.serial)}</td><td>${raffleEscape(row.prize)}</td><td>${raffleEscape(r?.owner||'—')}</td><td>${raffleEscape(r?.child||'—')}</td><td>${raffleEscape(r?.phone||'—')}</td><td>${raffleEscape(m.status)}${r?.sourceRecordId&&!state.records.some(s=>s.id===r.sourceRecordId)?'<br><small>來源業績已刪除，請確認</small>':''}</td></tr>`;}).join('')+(localRows.length?'':'<tr><td colspan="6" style="text-align:center;color:var(--color-text-secondary)">'+(rows.length?'本次公告沒有對應到本館已登記的中獎會員':'請先輸入公告並預覽比對')+'</td></tr>')+'</tbody>';el.appendChild(table);
+  table.innerHTML='<thead><tr><th>中獎券號</th><th>獎項</th><th>會員／家長</th><th>孩子</th><th>聯絡電話</th><th>比對狀態</th></tr></thead><tbody>'+localRows.map(row=>{const m=matchRaffleWinner(row),r=m.matches.length===1?m.matches[0]:null;return `<tr><td>${raffleEscape(row.serial)}</td><td>${raffleEscape(row.prize)}</td><td>${raffleEscape(r?.owner||'—')}</td><td>${raffleEscape(r?.child||'—')}</td><td>${raffleEscape(r?.phone||'—')}</td><td>${raffleEscape(m.status)}${r?.sourceRecordId&&!state.records.some(s=>s.id===r.sourceRecordId)?'<br><small>來源業績已刪除，請確認</small>':''}</td></tr>`;}).join('')+(localRows.length?'':'<tr><td colspan="6" style="text-align:center;color:var(--color-text-secondary)">'+(loading?'等待已登記券號連線完成後即可確認中獎會員':errors.length?'公告尚有內容無法辨識，請先核對上方提示':rows.length?'本次公告沒有對應到'+raffleEscape(scope)+'已登記的中獎會員':'請先輸入公告並預覽比對')+'</td></tr>')+'</tbody>';el.appendChild(table);
   const button=document.getElementById('draw-save-btn');if(button)button.disabled=raffleDrawSaving||raffleOcrBusy;
 }
 async function saveRaffleDraw() {
@@ -4084,7 +4152,7 @@ async function recognizeRaffleAnnouncement(file) {
     const result=await worker.recognize(file);const old=raffleDrawDrafts[key]?.text??document.getElementById('draw-text')?.value??'';
     const draft={text:(old?old+'\n':'')+result.data.text.trim(),date:raffleDrawDrafts[key]?.date??document.getElementById('draw-date')?.value??''};
     raffleDrawDrafts[key]=draft;delete raffleDrawPreviews[key];
-    if(raffleDrawKey()===key){document.getElementById('draw-text').value=draft.text;status('辨識完成，請核對並整理為「券號 | 獎項」後預覽');}
+    if(raffleDrawKey()===key){document.getElementById('draw-text').value=draft.text;status('辨識完成，請核對獎項與券號，可保留分組格式');raffleDrawPreviews[key]=parseRaffleAnnouncement(draft.text);}
   }catch(e){status('辨識未完成，可改貼文字');showToast('截圖辨識失敗：'+e.message,true);}finally{if(worker)await worker.terminate().catch(()=>{});raffleOcrBusy=false;renderRaffleDrawResults();}
 }
 function exportRaffleWinners() {
