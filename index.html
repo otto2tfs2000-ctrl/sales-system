@@ -528,6 +528,24 @@ button.raffle-pending-highlight:hover { background:#FFE4E6; border-color:#FDA4AF
 .raffle-award-card.claimed .award-status { color:#047857; }
 .raffle-award-card button { margin-top:7px;font-size:11px;padding:4px 8px; }
 .raffle-award-card .award-date { color:var(--color-text-secondary);font-size:11px; }
+/* Horizontal annual performance */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.annual-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.annual-heading h2{margin:0;font-size:24px;letter-spacing:-.5px}.annual-heading p{margin:6px 0 0;color:var(--color-text-secondary);font-size:13px}
+.annual-heading .annual-dept-tabs{margin:0}.annual-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.annual-overview-card{border:1px solid var(--color-border);border-radius:14px;background:var(--color-surface,#fff);padding:18px;min-width:0}
+.annual-overview-card>div{font-size:12px;color:var(--color-text-secondary)}.annual-overview-card strong{display:block;font-size:25px;margin:8px 0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.annual-overview-card small{display:block;font-size:11px;color:var(--color-text-secondary);line-height:1.7}
+.annual-blue{background:#f0f6ff;border-color:#d7e5ff}.annual-blue strong{color:#245bce}.annual-amber{background:#fff8e9;border-color:#eedbb4}
+.annual-note{padding:12px 15px;border-radius:9px;background:#f5f6f4;font-size:12px;color:var(--color-text-secondary);line-height:1.8;margin-bottom:12px}.annual-scroll-hint{font-size:11px;color:var(--color-text-secondary);margin:10px 0}
+.annual-matrix-scroll{overflow:auto;max-width:100%;border:1px solid var(--color-border);border-radius:12px}.annual-matrix{border-collapse:separate;border-spacing:0;min-width:1680px;width:100%;table-layout:fixed;font-size:12px;font-variant-numeric:tabular-nums}
+.annual-matrix th,.annual-matrix td{padding:15px 10px;border-bottom:1px solid var(--color-border-light);text-align:right;vertical-align:middle;white-space:nowrap;background:#fff}.annual-matrix th:first-child{width:152px;text-align:left;position:sticky;left:0;z-index:2;background:#f7f8f5;border-right:1px solid var(--color-border);font-size:12px}
+.annual-matrix thead th{background:#eef2eb;color:#35503e;font-weight:700;text-align:center;height:60px}.annual-matrix thead th:first-child{background:#e5ece1}.annual-matrix thead small{display:block;font-size:10px;margin-top:3px}.annual-matrix .annual-total{position:sticky;right:0;background:#f2f4ef;font-weight:700;min-width:110px;border-left:1px solid var(--color-border);z-index:1}.annual-matrix .annual-quarter-end{border-right:2px solid #dde4d8}.annual-matrix .annual-now{background:#f7faff}.annual-matrix thead .annual-now{background:#dfeaff;color:#245bce}
+.annual-matrix .annual-cash-row td{font-size:13px;background:#f5faf2;color:#315e31}.annual-matrix .annual-revenue-row td{font-size:13px;background:#f2f7ff;color:#245bce}.annual-matrix .annual-divider>*{border-top:2px solid #e4e7e0}.annual-matrix tbody tr:hover td{filter:brightness(.985)}.annual-matrix tr:last-child>*{border-bottom:0}
+.annual-badge{display:block;width:max-content;max-width:100%;margin:5px 0 0 auto;color:#8a550c;background:#fff0cd;border:1px solid #f3d58c;border-radius:5px;font-size:10px;padding:2px 5px}.annual-muted{color:var(--color-text-secondary);font-size:11px}.annual-edit-btn{border:1px solid #d6ded1;background:#fff;border-radius:6px;padding:6px 9px;color:#37503f;font-size:11px;cursor:pointer;white-space:nowrap}.annual-edit-btn:hover{background:#edf3e9}.annual-footnote{font-size:11px;color:var(--color-text-secondary);line-height:1.8;margin:10px 0 20px}
+.annual-adjustments{display:grid;gap:8px}.annual-adjustments>div{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border:1px solid #eddbb8;background:#fffbf2;border-radius:8px;padding:12px 14px;font-size:12px}.annual-adjustments>div>span:nth-child(3){flex:1;min-width:180px;overflow-wrap:anywhere;color:var(--color-text-secondary)}.annual-staff{margin-top:24px}.annual-staff summary{cursor:pointer;font-size:13px;font-weight:600;padding:12px 0}.annual-staff .annual-matrix th:first-child{font-size:12px}
+.annual-editor{border:1px solid #dce2d7;border-radius:16px;padding:24px;width:min(620px,calc(100vw - 24px));max-height:90vh;overflow:auto;box-sizing:border-box;box-shadow:0 15px 60px #0003;color:var(--color-text-primary)}.annual-editor::backdrop{background:#17231866}.annual-editor-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.annual-editor h3{margin:0;font-size:18px}.annual-editor-heading button{border:0;background:transparent;font-size:18px;cursor:pointer}.annual-editor-targets{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}.annual-editor label{font-size:12px;font-weight:500}.annual-editor input[type=number],.annual-editor textarea{display:block;width:100%;box-sizing:border-box;margin-top:7px;padding:10px;border:1px solid #ccd5c6;border-radius:7px;font-size:14px;font-family:inherit}.annual-editor input[type=radio]{margin-right:8px}.annual-cash-mode{border:1px solid #dce2d7;border-radius:10px;padding:15px;margin-bottom:16px}.annual-cash-mode legend{font-size:13px;font-weight:600;padding:0 5px}.annual-cash-mode>label{display:block;margin-bottom:14px}.annual-cash-mode>label b{display:block;margin:7px 0 0 23px;color:#315e31}#annual-manual-fields{padding:12px;background:#fff9ee;border-radius:8px;margin:8px 0 14px}#annual-manual-fields>label{display:block;margin-bottom:12px}.annual-cash-mode>small{display:block;margin-top:8px}.annual-editor-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.annual-history{font-size:11px;margin:12px 0}.annual-history p{padding:8px;background:#f7f8f5;line-height:1.8;overflow-wrap:anywhere}#annual-editor-error{font-size:12px;color:#c0342c;line-height:1.8}.annual-editor [disabled]{opacity:.6;cursor:wait}
+@media(max-width:760px){.annual-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.annual-overview-card{padding:13px}.annual-overview-card strong{font-size:21px}.annual-heading h2{font-size:21px}.annual-matrix{min-width:1650px}.annual-matrix th:first-child{width:110px}.annual-matrix .annual-total{position:static}.annual-editor{padding:18px}.annual-editor-targets{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -1208,6 +1226,7 @@ function initFirebase(config) {
 
 function startFirebaseListener() {
   if (!fbDb) return;
+  startAnnualListener();
   startRaffleListener();
   startRaffleDrawListener();
   startRaffleClaimListener();
@@ -2718,243 +2737,214 @@ function renderWeekly() {
 // ══════════════════════════════════════
 //  RENDER: ANNUAL
 // ══════════════════════════════════════
-let annualDept = '2F'; // selected dept tab
-
-function renderAnnual() {
-  const currentMonth = new Date().getMonth() + 1;
-  const depts = ['2F', '4F', '國圖'];
-  const deptLabels = { '2F': '旗艦 2F', '4F': '旗艦 4F', '國圖': '國圖館' };
-  const store = annualDept === '國圖' ? 'guotu' : 'flagship';
-
-  // dept tabs
-  const deptTabsHtml = depts.map(d =>
-    `<button class="annual-dept-tab ${d===annualDept?'active':''}" onclick="annualDept='${d}';renderAnnual()">${deptLabels[d]}</button>`
-  ).join('');
-
-  // build table rows
-  let totalTarget = 0, totalCashIncome = 0, totalRevenue = 0, completedMonths = 0;
-  let rows = '';
-
-  for (let m = 1; m <= 12; m++) {
-    const tgt = getMonthTargets(store, m);
-    const target = annualDept === '2F' ? (tgt._2f||0) : annualDept === '4F' ? (tgt._4f||0) : (tgt._store||0);
-    const cashIncome = state.records
-      .filter(r => !r.voided && r.month === m && r.dept === annualDept)
-      .reduce((s,r) => s+r.amount, 0);
-    // 營業收入：2F 從 Excel 匯入，4F/國圖 從 salaryData/daily 彙總
-    const msKey = `${store}:${m}`;
-    const ms = state.manualStats[msKey] || {};
-    let revenue = 0;
-    if (annualDept === '2F') {
-      const d2f = get2fDailyData(m);
-      revenue = Object.values(d2f).reduce((s,d) => s+(d.rev2f||0), 0);
-    } else if (annualDept === '4F') {
-      for (let d=1; d<=daysInMonth(m); d++) revenue += get4fDailyFromSalary(m,d).sales;
-    } else {
-      for (let d=1; d<=daysInMonth(m); d++) revenue += getKgDailyFromSalary(m,d).sales;
-    }
-
-    const rate = target > 0 ? cashIncome / target : null;
-    const diff = cashIncome - target;
-    const isPast = m < currentMonth;
-    const isCurrent = m === currentMonth;
-    const isFuture = m > currentMonth;
-
-    totalTarget += target;
-    if (isPast || isCurrent) {
-      totalCashIncome += cashIncome;
-      totalRevenue += revenue;
-      if (isPast) completedMonths++;
-    }
-
-    const cashCell = isFuture
-      ? `<td class="actual-cell" style="color:var(--color-text-tertiary)">—</td>`
-      : `<td class="actual-cell ${diff>=0&&target>0?'over':'under'}">$${fmt(cashIncome)}</td>`;
-
-    const revenueCell = isFuture
-      ? `<td style="color:var(--color-text-tertiary)">—</td>`
-      : revenue > 0
-        ? `<td style="font-weight:600;color:var(--color-accent)">$${fmt(revenue)}</td>`
-        : `<td style="color:var(--color-text-tertiary)">—</td>`;
-
-    const diffCell = isFuture || target === 0
-      ? `<td>—</td>`
-      : diff >= 0
-        ? `<td style="color:var(--color-green);font-weight:600">+$${fmt(diff)}</td>`
-        : `<td style="color:var(--color-red)">-$${fmt(-diff)}</td>`;
-
-    const rateCell = isFuture || target === 0
-      ? `<td class="rate-cell">—</td>`
-      : `<td class="rate-cell" style="color:${rateColor(rate)}">${fmtRate(rate)}</td>`;
-
-    const rowClass = isFuture ? 'future-row' : isCurrent ? 'current-row' : '';
-
-    const txCount = state.records.filter(r => !r.voided && r.month===m && r.dept===annualDept).length;
-    const txCell = isFuture ? '<td>—</td>' : `<td>${txCount}</td>`;
-
-    rows += `<tr class="${rowClass}">
-      <td>${MONTHS[m-1]}${isCurrent?' ◀':''}</td>
-      <td style="position:relative">
-        <input type="number" class="target-input" 
-          value="${target>0?(target/10000):''}" 
-          placeholder="—"
-          step="0.1"
-          title="輸入萬為單位，例如輸入 100 = 100萬"
-          onchange="saveAnnualTarget('${annualDept}',${m},this.value)">
-        <span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--color-text-tertiary);pointer-events:none">萬</span>
-      </td>
-      ${cashCell}
-      ${revenueCell}
-      ${diffCell}
-      ${rateCell}
-      ${txCell}
-    </tr>`;
-  }
-
-  // summary KPIs
-  const annualRate = totalTarget > 0 ? totalCashIncome / totalTarget : null;
-  const avgMonthly = completedMonths > 0 ? totalCashIncome / completedMonths : 0;
-  const projectedAnnual = avgMonthly > 0 ? avgMonthly * 12 : 0;
-  const avgRevenue = completedMonths > 0 ? totalRevenue / completedMonths : 0;
-
-  // Best month (by cash income)
-  let bestMonth = 0, bestAmt = 0;
-  for (let m = 1; m < currentMonth; m++) {
-    const a = state.records.filter(r=>!r.voided&&r.month===m&&r.dept===annualDept).reduce((s,r)=>s+r.amount,0);
-    if (a > bestAmt) { bestAmt = a; bestMonth = m; }
-  }
-
-  // Staff breakdown for current dept (all months combined)
-  const staffStore = annualDept === '國圖' ? 'guotu' : 'flagship';
-  const allStaffInDept = new Set();
-  state.records.filter(r=>!r.voided&&r.dept===annualDept&&r.staff).forEach(r=>allStaffInDept.add(r.staff));
-  let staffRows = '';
-  for (const staff of allStaffInDept) {
-    let staffCells = '';
-    let staffTotal = 0;
-    for (let m = 1; m <= currentMonth; m++) {
-      const a = state.records.filter(r=>!r.voided&&r.month===m&&r.dept===annualDept&&r.staff===staff).reduce((s,r)=>s+r.amount,0);
-      staffTotal += a;
-      staffCells += `<td style="text-align:right;font-size:12px">${a>0?'$'+fmt(a):'—'}</td>`;
-    }
-    staffRows += `<tr><td style="font-weight:600;font-size:12px">${staff}</td>${staffCells}<td style="text-align:right;font-weight:700">$${fmt(staffTotal)}</td></tr>`;
-  }
-
-  let staffTableHtml = '';
-  if (staffRows) {
-    const monthHdrs = Array.from({length:currentMonth},(_,i)=>`<th>${i+1}月</th>`).join('');
-    staffTableHtml = `
-      <div class="section-title" style="margin-top:24px"><span>👥</span> 業務各月業績明細（${deptLabels[annualDept]}）</div>
-      <div class="table-wrap">
-      <table class="annual-table">
-        <thead><tr><th>業務</th>${monthHdrs}<th>累計</th></tr></thead>
-        <tbody>${staffRows}</tbody>
-      </table></div>`;
-  }
-
-  // Revenue summary section (monthly breakdown)
-  let revSummaryRows = '';
-  for (let m = 1; m < currentMonth + 1; m++) {
-    if (m > currentMonth) break;
-    const cashIncome = state.records.filter(r=>!r.voided&&r.month===m&&r.dept===annualDept).reduce((s,r)=>s+r.amount,0);
-    let revenue2 = 0, head2 = 0;
-    if (annualDept === '2F') {
-      const d2f = get2fDailyData(m);
-      revenue2 = Object.values(d2f).reduce((s,d) => s+(d.rev2f||0), 0);
-      head2    = Object.values(d2f).reduce((s,d) => s+(d.head2f||0), 0);
-    } else if (annualDept === '4F') {
-      for (let d=1; d<=daysInMonth(m); d++) { const r=get4fDailyFromSalary(m,d); revenue2+=r.sales; head2+=r.headCount; }
-    } else {
-      for (let d=1; d<=daysInMonth(m); d++) { const r=getKgDailyFromSalary(m,d); revenue2+=r.sales; head2+=r.headCount; }
-    }
-    const revenue = revenue2, head = head2;
-    if (cashIncome > 0 || revenue > 0) {
-      revSummaryRows += `<tr>
-        <td>${MONTHS[m-1]}</td>
-        <td style="text-align:right;font-weight:600">$${fmt(cashIncome)}</td>
-        <td style="text-align:right;font-weight:600;color:var(--color-accent)">${revenue>0?'$'+fmt(revenue):'—'}</td>
-        <td style="text-align:right;color:var(--color-text-secondary)">${head>0?head+' 人次':'—'}</td>
-      </tr>`;
-    }
-  }
-
-  const revSummaryHtml = revSummaryRows ? `
-    <div class="section-title" style="margin-top:24px"><span>💰</span> 現金收入 vs 營業收入 月度對照（${deptLabels[annualDept]}）</div>
-    <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:8px;padding-left:2px">
-      現金收入＝方案銷售預收款（流水帳）；營業收入＝學生確認上課實際消耗（手動登記）
-    </div>
-    <div class="table-wrap">
-    <table class="annual-table">
-      <thead><tr>
-        <th style="text-align:left">月份</th>
-        <th>現金收入</th>
-        <th>營業收入</th>
-        <th>教學人次</th>
-      </tr></thead>
-      <tbody>${revSummaryRows}</tbody>
-      <tfoot><tr>
-        <td style="text-align:left">合計</td>
-        <td style="text-align:right;font-weight:700">$${fmt(totalCashIncome)}</td>
-        <td style="text-align:right;font-weight:700;color:var(--color-accent)">${totalRevenue>0?'$'+fmt(totalRevenue):'—'}</td>
-        <td style="text-align:right;color:var(--color-text-secondary)">—</td>
-      </tr></tfoot>
-    </table></div>` : '';
-
-  document.getElementById('tab-annual').innerHTML = `
-    <div class="annual-dept-tabs">${deptTabsHtml}</div>
-    <div class="annual-kpi-row">
-      <div class="annual-kpi"><div class="lbl">年度目標合計</div><div class="val">$${fmt(totalTarget)}</div></div>
-      <div class="annual-kpi"><div class="lbl">現金收入累計</div><div class="val" style="color:${rateColor(annualRate)}">$${fmt(totalCashIncome)}</div><div style="font-size:10px;color:var(--color-text-tertiary);margin-top:2px">預收款項</div></div>
-      <div class="annual-kpi"><div class="lbl">營業收入累計</div><div class="val" style="color:var(--color-accent)">$${totalRevenue>0?fmt(totalRevenue):'—'}</div><div style="font-size:10px;color:var(--color-text-tertiary);margin-top:2px">實際消耗</div></div>
-      <div class="annual-kpi"><div class="lbl">現金達成率</div><div class="val" style="color:${rateColor(annualRate)}">${fmtRate(annualRate)}</div></div>
-      <div class="annual-kpi"><div class="lbl">月均現金收入</div><div class="val">$${fmt(Math.round(avgMonthly))}</div></div>
-      ${bestMonth>0?`<div class="annual-kpi"><div class="lbl">最佳月份</div><div class="val" style="font-size:15px">${MONTHS[bestMonth-1]}<br><span style="font-size:13px;color:var(--color-green)">$${fmt(bestAmt)}</span></div></div>`:''}
-      <div class="annual-kpi"><div class="lbl">年度預估</div><div class="val" style="font-size:15px;color:var(--color-text-secondary)">$${fmt(Math.round(projectedAnnual))}</div></div>
-    </div>
-    <div class="table-wrap">
-    <table class="annual-table">
-      <thead>
-        <tr>
-          <th style="text-align:left">月份</th>
-          <th>月目標（萬）</th>
-          <th>現金收入</th>
-          <th>營業收入</th>
-          <th>差額</th>
-          <th>達成率</th>
-          <th>筆數</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-      <tfoot>
-        <tr>
-          <td style="text-align:left">全年合計</td>
-          <td style="text-align:right">$${fmt(totalTarget)}</td>
-          <td style="text-align:right;color:${rateColor(annualRate)}">$${fmt(totalCashIncome)}</td>
-          <td style="text-align:right;font-weight:700;color:var(--color-accent)">${totalRevenue>0?'$'+fmt(totalRevenue):'—'}</td>
-          <td style="text-align:right;color:${totalCashIncome>=totalTarget?'var(--color-green)':'var(--color-red)'}">
-            ${totalCashIncome>=totalTarget?'+':''}$${fmt(totalCashIncome-totalTarget)}
-          </td>
-          <td style="text-align:right;color:${rateColor(annualRate)}">${fmtRate(annualRate)}</td>
-          <td style="text-align:right">${state.records.filter(r=>!r.voided&&r.dept===annualDept).length}</td>
-        </tr>
-      </tfoot>
-    </table></div>
-    ${revSummaryHtml}
-    ${staffTableHtml}`;
-}
-
-function saveAnnualTarget(dept, month, val) {
+// Annual settings live outside salesData so older clients cannot overwrite adjustments.
+let annualDept = '2F';
+let annualSettings = JSON.parse(localStorage.getItem('annualPerformance') || '{}');
+let annualReady = false, annualOff = null, annualBusy = false, annualEditor = null;
+const ANNUAL_DEPTS = { '2F':'旗艦 2F', '4F':'旗艦 4F', '國圖':'國圖館' };
+function annualCache() { localStorage.setItem('annualPerformance', JSON.stringify(annualSettings)); }
+function annualConfig(dept, month) { return annualSettings[YEAR]?.[dept]?.[month] || {}; }
+function annualFingerprint(c) { return JSON.stringify([c.updatedAt||0,c.cashOverride?.amount??null,c.cashOverride?.note||'',c.revenueTarget??null]); }
+function annualTargetInfo(dept, month) {
   const store = dept === '國圖' ? 'guotu' : 'flagship';
-  const tgt = getMonthTargets(store, month);
-  const key = dept === '2F' ? '_2f' : dept === '4F' ? '_4f' : '_store';
-  // 輸入以萬為單位，儲存時乘以 10000
-  const wan = parseFloat(val) || 0;
-  tgt[key] = Math.round(wan * 10000);
-  save();
-  syncToFirebase(true);
-  renderAnnual();
-  const active = document.querySelector('.tab-content.active');
-  if (active && active.id === 'tab-daily') renderDaily();
+  const field = dept === '2F' ? '_2f' : dept === '4F' ? '_4f' : '_store';
+  return {store, field, value:Number(getMonthTargets(store, month)[field])||0};
+}
+function startAnnualListener() {
+  if (annualOff) { annualOff(); annualOff=null; }
+  annualReady=false;
+  if (!fbDb) return;
+  const ref=fbDb.ref('annualPerformance');
+  const cb=snap=>{
+    annualSettings=snap.val()||{}; annualReady=true;
+    try { annualCache(); } catch(e) {}
+    if(document.querySelector('.tab-content.active')?.id==='tab-annual') renderAnnual();
+  };
+  ref.on('value', cb, err=>{annualReady=false;showToast('年度調整同步失敗：'+err.message,true);});
+  annualOff=()=>ref.off('value',cb);
+}
+function annualMonthData(dept, month) {
+  const rows=state.records.filter(r=>!r.voided && (Number(r.year)||YEAR)===YEAR && Number(r.month)===month && r.dept===dept);
+  const raw=rows.reduce((s,r)=>s+(Number(r.amount)||0),0);
+  const cfg=annualConfig(dept,month), override=cfg.cashOverride;
+  const adjusted=override && Number.isFinite(override.amount) && override.amount>=0;
+  let revenue=0, head=0;
+  if(dept==='2F') {
+    Object.values(get2fDailyData(month)).forEach(d=>{revenue+=Number(d.rev2f)||0;head+=Number(d.head2f)||0;});
+  } else {
+    const daily=dept==='4F'?get4fDailyFromSalary:getKgDailyFromSalary;
+    for(let d=1;d<=daysInMonth(month);d++) { const v=daily(month,d);revenue+=Number(v.sales)||0;head+=Number(v.headCount)||0; }
+  }
+  const today=new Date();
+  const elapsed=YEAR<today.getFullYear() || (YEAR===today.getFullYear() && month<=today.getMonth()+1);
+  return {month, raw, cash:adjusted?override.amount:raw, adjusted:!!adjusted, note:override?.note||'',
+    target:annualTargetInfo(dept,month).value, revenueTarget:cfg.revenueTarget??null, revenue, head, count:rows.length,
+    visible:elapsed || rows.length>0 || !!adjusted || revenue!==0 || head>0};
+}
+function annualSwitchDept(dept) {
+  if(annualBusy || !ANNUAL_DEPTS[dept]) return;
+  annualDept=dept;renderAnnual();
+}
+function renderAnnual() {
+  const data=Array.from({length:12},(_,i)=>annualMonthData(annualDept,i+1));
+  const shown=data.filter(d=>d.visible);
+  const sum=(key,rows=data)=>rows.reduce((s,d)=>s+(Number(d[key])||0),0);
+  const totals={target:sum('target'),cash:sum('cash',shown),revenueTarget:sum('revenueTarget'),revenue:sum('revenue',shown),raw:sum('raw',shown),head:sum('head',shown),count:sum('count',shown)};
+  const revHasTarget=data.some(d=>d.revenueTarget!==null);
+  const cashRate=totals.target>0?totals.cash/totals.target:null;
+  const revRate=totals.revenueTarget>0?totals.revenue/totals.revenueTarget:null;
+  const money=n=>'$'+fmt(n);
+  const delta=(value,target)=>target>0?`<span style="color:${value>=target?'var(--color-green)':'var(--color-red)'}">${value>=target?'+':'−'}${money(Math.abs(value-target))}</span>`:'—';
+  const rate=(v,t)=>t>0?`<span style="color:${rateColor(v/t)}">${fmtRate(v/t)}</span>`:'—';
+  const row=(label,cell,total,cls='')=>`<tr class="${cls}"><th scope="row">${label}</th>${data.map(d=>`<td class="${d.month%3===0?'annual-quarter-end ':''}${YEAR===new Date().getFullYear()&&d.month===new Date().getMonth()+1?'annual-now':''}">${cell(d)}</td>`).join('')}<td class="annual-total">${total}</td></tr>`;
+  const adjusted=data.filter(d=>d.adjusted);
+  const rows=[
+    row('現收目標',d=>money(d.target),money(totals.target)),
+    row('現金收入',d=>d.visible?`<strong>${money(d.cash)}</strong>${d.adjusted?'<span class="annual-badge">已調整</span>':''}`:'—',money(totals.cash),'annual-cash-row'),
+    row('現收差額',d=>d.visible?delta(d.cash,d.target):'—',delta(totals.cash,totals.target)),
+    row('現收達成率',d=>d.visible?rate(d.cash,d.target):'—',rate(totals.cash,totals.target)),
+    row('營收目標',d=>d.revenueTarget===null?'<span class="annual-muted">未設定</span>':money(d.revenueTarget),revHasTarget?money(totals.revenueTarget):'未設定','annual-divider'),
+    row('營業收入',d=>d.visible?(d.revenue?`<strong>${money(d.revenue)}</strong>`:'—'):'—',money(totals.revenue),'annual-revenue-row'),
+    row('營收差額',d=>d.visible?delta(d.revenue,d.revenueTarget):'—',delta(totals.revenue,totals.revenueTarget)),
+    row('營收達成率',d=>d.visible?rate(d.revenue,d.revenueTarget):'—',rate(totals.revenue,totals.revenueTarget)),
+    row('教學人次',d=>d.visible?fmt(d.head):'—',fmt(totals.head),'annual-divider'),
+    row('流水筆數',d=>d.visible?fmt(d.count):'—',fmt(totals.count)),
+    row('現收來源',d=>d.adjusted?`<span class="annual-badge" title="${raffleEscape(d.note)}">手動調整</span>`:'<span class="annual-muted">流水帳・鎖定</span>',adjusted.length?`${adjusted.length} 個月已調整`:'流水帳'),
+    row('修改設定',d=>`<button class="annual-edit-btn" onclick="openAnnualEditor('${annualDept}',${d.month})">目標／調整</button>`,'—')
+  ].join('');
+  const staffNames=[...new Set(state.records.filter(r=>!r.voided&&(Number(r.year)||YEAR)===YEAR&&r.dept===annualDept&&r.staff).map(r=>r.staff))];
+  const staffRows=staffNames.map(name=>{
+    const amounts=data.map(d=>state.records.filter(r=>!r.voided&&(Number(r.year)||YEAR)===YEAR&&Number(r.month)===d.month&&r.dept===annualDept&&r.staff===name).reduce((s,r)=>s+(Number(r.amount)||0),0));
+    return `<tr><th scope="row">${raffleEscape(name)}</th>${amounts.map(v=>`<td>${v?money(v):'—'}</td>`).join('')}<td class="annual-total">${money(amounts.reduce((a,b)=>a+b,0))}</td></tr>`;
+  }).join('');
+  const wrap=document.getElementById('annual-matrix-scroll');
+  const scroll=wrap?.scrollLeft||0;
+  document.getElementById('tab-annual').innerHTML=`
+    <div class="annual-heading"><div><h2>${YEAR} 年度業績</h2><p>月份橫向對照 · 金額單位：元</p></div><div class="annual-dept-tabs">${Object.entries(ANNUAL_DEPTS).map(([k,v])=>`<button class="annual-dept-tab ${k===annualDept?'active':''}" onclick="annualSwitchDept('${k}')">${v}</button>`).join('')}</div></div>
+    <div class="annual-overview">
+      <div class="annual-overview-card"><div>現金收入累計</div><strong>${money(totals.cash)}</strong><small>全年現收目標 ${money(totals.target)} · 達成 ${fmtRate(cashRate)}</small></div>
+      <div class="annual-overview-card annual-blue"><div>營業收入累計</div><strong>${money(totals.revenue)}</strong><small>${revHasTarget?`全年已設定目標 ${money(totals.revenueTarget)} · 達成 ${fmtRate(revRate)}`:'可為各月份設定營收目標'}</small></div>
+      <div class="annual-overview-card"><div>原始流水合計</div><strong>${money(totals.raw)}</strong><small>${fmt(totals.count)} 筆 · 維持原始流水記錄</small></div>
+      <div class="annual-overview-card ${adjusted.length?'annual-amber':''}"><div>年度總表調整</div><strong>${adjusted.length} 個月</strong><small>${adjusted.length?`與流水差額 ${totals.cash-totals.raw>=0?'+':'−'}${money(Math.abs(totals.cash-totals.raw))}`:'現收全部依流水帳自動計算'}</small></div>
+    </div>
+    <div class="annual-note">現金收入預設鎖定並依流水帳計算。點各月份「目標／調整」可設定兩種目標，或只調整年度總表的現收；已調整月份不會隨流水變動，可隨時恢復自動計算。</div>
+    ${(fbDb||fbConfig?.apiKey)&&!annualReady?'<div class="annual-note annual-amber">年度調整尚未同步完成，請稍候再編輯。</div>':''}
+    <div class="annual-scroll-hint">左右滑動查看 12 個月份及全年合計 →</div>
+    <div class="table-wrap annual-matrix-scroll" id="annual-matrix-scroll"><table class="annual-matrix"><caption class="sr-only">${ANNUAL_DEPTS[annualDept]} ${YEAR} 年度現收與營收</caption><thead><tr><th scope="col">${ANNUAL_DEPTS[annualDept]}</th>${data.map(d=>`<th scope="col" class="${d.month%3===0?'annual-quarter-end ':''}${YEAR===new Date().getFullYear()&&d.month===new Date().getMonth()+1?'annual-now':''}">${d.month}月${YEAR===new Date().getFullYear()&&d.month===new Date().getMonth()+1?'<small>本月</small>':''}</th>`).join('')}<th scope="col" class="annual-total">全年合計</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="annual-footnote">達成率以全年目標計算；未來月份有流水或營收時也會列入累計。營收目標未設定時不顯示達成率。教學人次及流水筆數維持來源資料。</p>
+    ${adjusted.length?`<div class="section-title" style="margin-top:24px">年度現收調整記錄</div><div class="annual-adjustments">${adjusted.map(d=>`<div><b>${d.month}月</b><span>流水 ${money(d.raw)} → 總表 <strong>${money(d.cash)}</strong></span><span>${raffleEscape(d.note)}</span><button class="annual-edit-btn" onclick="openAnnualEditor('${annualDept}',${d.month})">檢視／恢復</button></div>`).join('')}</div>`:''}
+    <details class="annual-staff"><summary>業務各月流水明細（原始流水，未套用總表調整）</summary><div class="table-wrap annual-matrix-scroll"><table class="annual-matrix"><thead><tr><th>業務</th>${data.map(d=>`<th>${d.month}月</th>`).join('')}<th class="annual-total">合計</th></tr></thead><tbody>${staffRows||'<tr><td colspan="14">尚無流水資料</td></tr>'}</tbody></table></div></details>`;
+  document.getElementById('annual-matrix-scroll').scrollLeft=scroll;
+}
+function annualEnsureDialog() {
+  let el=document.getElementById('annual-editor');
+  if(el) return el;
+  el=document.createElement('dialog');el.id='annual-editor';el.className='annual-editor';
+  el.addEventListener('cancel',e=>{if(annualBusy)e.preventDefault();else annualEditor=null;});
+  document.body.appendChild(el);return el;
+}
+function openAnnualEditor(dept,month) {
+  if(annualBusy||!ANNUAL_DEPTS[dept]||!Number.isInteger(month)||month<1||month>12) return;
+  if((fbDb||fbConfig?.apiKey)&&(!fbDb||!fbInitialSyncDone||!annualReady)) {showToast('請等待雲端同步完成再編輯年度設定',true);return;}
+  const d=annualMonthData(dept,month), cfg=annualConfig(dept,month), info=annualTargetInfo(dept,month);
+  annualEditor={dept,month,baseline:annualFingerprint(cfg),targetBaseline:info.value};
+  const history=(Array.isArray(cfg.history)?cfg.history:[]).slice(-5).reverse();
+  const preset=YEAR===2026&&dept==='4F'&&[1,2].includes(month)?{1:419795,2:362490}[month]:null;
+  const el=annualEnsureDialog();
+  el.innerHTML=`<form id="annual-editor-form" onsubmit="event.preventDefault();saveAnnualEditor()">
+    <div class="annual-editor-heading"><h3>${YEAR} 年 ${month} 月 · ${ANNUAL_DEPTS[dept]}</h3><button type="button" aria-label="關閉" onclick="closeAnnualEditor()">✕</button></div>
+    <p class="annual-muted">目標使用「元」為單位；例如五十萬元填入 500000。</p>
+    <div class="annual-editor-targets"><label>現收目標（元）<input id="annual-cash-target" type="number" min="0" step="1" required value="${d.target}"></label><label>營收目標（元，留白＝未設定）<input id="annual-revenue-target" type="number" min="0" step="1" value="${d.revenueTarget??''}" placeholder="未設定"></label></div>
+    <fieldset class="annual-cash-mode"><legend>年度總表的現金收入</legend>
+      <label><input type="radio" name="annual-cash-mode" id="annual-mode-auto" value="auto" ${!d.adjusted?'checked':''} onchange="annualModeChanged()">依流水帳自動計算（鎖定）<b>$${fmt(d.raw)}</b></label>
+      <label><input type="radio" name="annual-cash-mode" id="annual-mode-manual" value="manual" ${d.adjusted?'checked':''} onchange="annualModeChanged()">手動調整此月份</label>
+      <div id="annual-manual-fields"><label>總表現收金額（元）<input id="annual-cash-override" type="number" min="0" step="1" value="${d.cash}"></label><label>調整原因（必填）<textarea id="annual-cash-note" maxlength="500" rows="2" placeholder="例如：依會計確認，調整歷史入帳差異">${raffleEscape(d.note)}</textarea></label></div>
+      ${preset!==null?`<button type="button" class="annual-edit-btn" onclick="annualUseAccountingAmount(${preset})">帶入會計確認值 $${fmt(preset)}</button><small class="annual-muted">帶入後仍需按「儲存設定」才會生效。</small>`:''}
+    </fieldset>
+    <p class="annual-note">手動調整只影響年度總表的金額、差額及達成率，不修改原始交易。選回「依流水帳自動計算」並儲存即可恢復。</p>
+    ${history.length?`<details class="annual-history"><summary>最近 ${history.length} 次修改</summary>${history.map(h=>`<p>${new Date(h.at).toLocaleString('zh-TW')}<br>現收：${h.newCashOverride?'手動 $'+fmt(h.newCashOverride.amount):'依流水帳'}${h.newCashOverride?.note?' · '+raffleEscape(h.newCashOverride.note):''}<br>現收目標 $${fmt(h.newCashTarget)} · 營收目標 ${h.newRevenueTarget===null||h.newRevenueTarget===undefined?'未設定':'$'+fmt(h.newRevenueTarget)}</p>`).join('')}</details>`:''}
+    <div id="annual-editor-error" role="alert"></div><div class="annual-editor-actions"><button type="button" class="btn-secondary" onclick="closeAnnualEditor()">取消</button><button type="submit" class="btn-primary" id="annual-editor-save">儲存設定</button></div></form>`;
+  annualModeChanged();if(!el.open)el.showModal();
+}
+function annualModeChanged() {
+  const manual=document.getElementById('annual-mode-manual').checked;
+  document.getElementById('annual-manual-fields').hidden=!manual;
+  ['annual-cash-override','annual-cash-note'].forEach(id=>{const el=document.getElementById(id);el.disabled=!manual;el.required=manual;});
+}
+function annualUseAccountingAmount(amount) {
+  document.getElementById('annual-mode-manual').checked=true;
+  document.getElementById('annual-cash-override').value=amount;
+  document.getElementById('annual-cash-note').value='依會計確認，年度總表調整；保留原始流水帳。';annualModeChanged();
+}
+function closeAnnualEditor() {
+  if(annualBusy)return;
+  document.getElementById('annual-editor')?.close();annualEditor=null;
+}
+function annualParseMoney(value, optional=false) {
+  const text=String(value).trim();if(optional&&text==='')return null;
+  if(!/^\d+$/.test(text)||!Number.isSafeInteger(Number(text)))throw new Error('金額請填入 0 以上的整數，不含逗號');
+  return Number(text);
+}
+async function saveAnnualEditor() {
+  if(annualBusy||!annualEditor)return false;
+  const edit={...annualEditor}, error=document.getElementById('annual-editor-error');error.textContent='';
+  let target,revenueTarget,cashOverride=null;
+  try {
+    target=annualParseMoney(document.getElementById('annual-cash-target').value);
+    revenueTarget=annualParseMoney(document.getElementById('annual-revenue-target').value,true);
+    if(document.getElementById('annual-mode-manual').checked) {
+      const amount=annualParseMoney(document.getElementById('annual-cash-override').value);
+      const note=document.getElementById('annual-cash-note').value.trim();
+      if(!note)throw new Error('請填寫現收調整原因');if(note.length>500)throw new Error('調整原因最多 500 字');
+      cashOverride={amount,note};
+    }
+  }catch(e){error.textContent=e.message;return false;}
+  if((fbDb||fbConfig?.apiKey)&&(!fbDb||!fbInitialSyncDone||!annualReady)){error.textContent='雲端尚未連線或同步完成，請稍後再儲存';return false;}
+  const info=annualTargetInfo(edit.dept,edit.month), path=`annualPerformance/${YEAR}/${edit.dept}/${edit.month}`;
+  annualBusy=true;
+  const controls=[...document.querySelectorAll('#annual-editor button, #annual-editor input, #annual-editor textarea')];
+  controls.forEach(el=>el.disabled=true);
+  let completed=false;
+  try {
+    let current=annualConfig(edit.dept,edit.month), cloudTarget=info.value;
+    if(fbDb) {
+      const [configSnap,targetSnap]=await Promise.all([fbDb.ref(path).once('value'),fbDb.ref(`salesData/targets/${info.store}:${edit.month}/${info.field}`).once('value')]);
+      current=configSnap.val()||{};cloudTarget=targetSnap.val()??info.value;
+    }
+    if(annualFingerprint(current)!==edit.baseline||Number(cloudTarget)!==edit.targetBaseline)throw new Error('此月份已被其他裝置修改，請取消後重新開啟確認');
+    const sameOverride=JSON.stringify(current.cashOverride??null)===JSON.stringify(cashOverride);
+    if(sameOverride&&(current.revenueTarget??null)===revenueTarget&&target===edit.targetBaseline){completed=true;showToast('設定沒有變更');return true;}
+    const at=Date.now();
+    const next={...current,revenueTarget,cashOverride,updatedAt:at,history:[...(Array.isArray(current.history)?current.history:[]),{at,oldCashOverride:current.cashOverride??null,newCashOverride:cashOverride,oldCashTarget:edit.targetBaseline,newCashTarget:target,oldRevenueTarget:current.revenueTarget??null,newRevenueTarget:revenueTarget}].slice(-50)};
+    // Atomic multi-location update: annual adjustment and the shared cash target, without touching any sales records.
+    if(fbDb) {
+      const updates={[path]:next};
+      if(target!==edit.targetBaseline)updates[`salesData/targets/${info.store}:${edit.month}/${info.field}`]=target;
+      await fbDb.ref().update(updates);
+    }
+    const settingsNext={...annualSettings,[YEAR]:{...(annualSettings[YEAR]||{}),[edit.dept]:{...(annualSettings[YEAR]?.[edit.dept]||{}),[edit.month]:next}}};
+    const targetKey=info.store+':'+edit.month;
+    const targetsNext={...monthTargets,[targetKey]:{...getMonthTargets(info.store,edit.month),[info.field]:target}};
+    let cacheError=false;
+    const oldSettings=localStorage.getItem('annualPerformance'),oldTargets=localStorage.getItem('monthTargets');
+    try {
+      localStorage.setItem('annualPerformance',JSON.stringify(settingsNext));
+      localStorage.setItem('monthTargets',JSON.stringify(targetsNext));
+    }catch(e) {
+      if(!fbDb) {
+        try {localStorage.setItem('annualPerformance',oldSettings||'{}');localStorage.setItem('monthTargets',oldTargets||'{}');}catch(restoreError){}
+        throw new Error('本機儲存失敗，請確認儲存空間後重試');
+      }
+      cacheError=true;
+    }
+    annualSettings=settingsNext;monthTargets=targetsNext;
+    completed=true;
+    showToast(cacheError?'雲端已儲存，但本機備份失敗；原始流水帳保留':'✓ 年度設定已儲存，原始流水帳保留',cacheError);return true;
+  } catch(e){error.textContent='儲存未完成：'+e.message;return false;}
+  finally {
+    annualBusy=false;controls.forEach(el=>el.disabled=false);annualModeChanged();
+    if(completed){closeAnnualEditor();renderAnnual();}
+  }
 }
 
 // ══════════════════════════════════════
