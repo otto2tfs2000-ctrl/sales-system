@@ -546,6 +546,9 @@ button.raffle-pending-highlight:hover { background:#FFE4E6; border-color:#FDA4AF
   .ops-title{margin:8px 0 4px}.ops-table thead{display:table-header-group}.ops-table tr{break-inside:avoid}.ops-table th,.ops-table td{padding:3px}
 }
 
+.annual-yoy-detail{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+.annual-yoy-detail section{min-width:0}
+@media(max-width:760px){.annual-yoy-detail{grid-template-columns:minmax(0,1fr)}}
 #tab-annual{container:annual / inline-size}
 .annual-table-group{display:grid;gap:12px;min-width:0}
 .annual-table-group[data-annual-layout]{display:none}
@@ -2828,11 +2831,11 @@ function annualMonthData(dept, month) {
     visible:elapsed || rows.length>0 || !!adjusted || revenueOverride!==null || revenue!==0 || head>0};
 }
 function annualSwitchDept(dept) {
-  if(annualBusy || (dept!=='overview'&&!Object.hasOwn(ANNUAL_DEPTS,dept))) return;
+  if(annualBusy || (!['overview','yoy'].includes(dept)&&!Object.hasOwn(ANNUAL_DEPTS,dept))) return;
   annualDept=dept;renderAnnual();
 }
 function annualNavigation() {
-  return '<div class="annual-dept-tabs">'+[['overview','整體分析'],...Object.entries(ANNUAL_DEPTS)].map(([k,v])=>
+  return '<div class="annual-dept-tabs">'+[['overview','整體分析'],['yoy','年度比較'],...Object.entries(ANNUAL_DEPTS)].map(([k,v])=>
     `<button type="button" class="annual-dept-tab ${k===annualDept?'active':''}" aria-pressed="${k===annualDept}" onclick="annualSwitchDept('${k}')">${v}</button>`
   ).join('')+'</div>';
 }
@@ -2900,8 +2903,75 @@ function renderAnnualOps() {
     <p class="annual-footnote">月增減只比較營收資料完整的相鄰月份；當月尚未結帳，不列入月增減比較。實績含年度業績頁已儲存的手動調整。</p>`;
 }
 
+// 2025 旗艦 2F 月結資料；銷課保留原始小數，顯示時以元四捨五入。
+const ANNUAL_2F_2025=[
+  [413289,522751.11],[699257,505387.43],[605978,633700.26],[845143,558264.33],
+  [1001221,580497.2],[711274,600101.21],[587415,661260.46],[525172,598245.94],
+  [682035,481952.34],[525418,436010.65],[1152694,611298.27],[345413,599648.57]
+];
+let annualYoyEnd=null;
+function annualYoyPeriods(workingYear,today=new Date()) {
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei',year:'numeric',month:'numeric'}).formatToParts(today);
+  const year=Number(parts.find(p=>p.type==='year').value),month=Number(parts.find(p=>p.type==='month').value);
+  return {closed:workingYear<year?12:workingYear===year?month-1:0, open:workingYear===year?month:0};
+}
+function annualYoyData(current,through,closed) {
+  const rows=ANNUAL_2F_2025.map(([oldCash,oldRevenue],i)=>{
+    const d=current[i],month=i+1, cash=d&&(d.count>0||d.adjusted)?d.cash:null, revenue=d?.revenueReported?d.revenue:null;
+    return {month,oldCash,oldRevenue,cash,revenue,include:month<=through&&month<=closed};
+  });
+  const pairs=key=>rows.filter(d=>d.include&&d[key]!==null);
+  const roll=(list,key,oldKey)=>({n:list.length,actual:list.reduce((a,d)=>a+d[key],0),prior:list.reduce((a,d)=>a+d[oldKey],0)});
+  const matched=rows.filter(d=>d.include&&d.cash!==null&&d.revenue!==null);
+  return {rows,cash:roll(pairs('cash'),'cash','oldCash'),revenue:roll(pairs('revenue'),'revenue','oldRevenue'),
+    pairedCash:roll(matched,'cash','oldCash'),pairedRevenue:roll(matched,'revenue','oldRevenue')};
+}
+function setAnnualYoyEnd(value) {
+  annualYoyEnd=Number(value);renderAnnual();
+}
+function renderAnnualYoy() {
+  const {closed,open}=annualYoyPeriods(YEAR);
+  const through=Number.isInteger(annualYoyEnd)&&annualYoyEnd>=1&&annualYoyEnd<=closed?annualYoyEnd:closed;
+  const {rows,cash,revenue,pairedCash,pairedRevenue}=annualYoyData(
+    Array.from({length:12},(_,i)=>annualMonthData('2F',i+1)),through,closed);
+  const money=n=>n==null?'—':'$'+fmt(n);
+  const ratio=(num,den)=>num!==null&&den>0?num/den:null;
+  const signed=(n,suffix='',digits=null)=>n==null?'—':(n>0?'+':n<0?'−':'')+(digits===null?'$'+fmt(Math.abs(n)):Math.abs(n).toFixed(digits))+suffix;
+  const yoy=(actual,prior)=>actual!==null&&prior>0?(actual/prior-1)*100:null;
+  const ratioPp=(actual,prior)=>actual!==null&&prior!==null?(actual-prior)*100:null;
+  const kpi=(label,s)=>`<div class="annual-overview-card"><div>${label}</div><strong>${s.n?signed(yoy(s.actual,s.prior),'%',1):'—'}</strong><small>${s.n?`2026 ${money(s.actual)} · 2025 ${money(s.prior)}<br>差額 ${signed(s.actual-s.prior)} · 可比 ${s.n}／${through} 個月`:'尚無可比月份'}</small></div>`;
+  const pending=(fbDb||fbConfig?.apiKey)&&(!fbInitialSyncDone||!annualReady);
+  const cashFull=rows.reduce((s,d)=>s+d.oldCash,0),revFull=rows.reduce((s,d)=>s+d.oldRevenue,0);
+  const pairedNow=ratio(pairedRevenue.actual,pairedCash.actual),pairedThen=ratio(pairedRevenue.prior,pairedCash.prior);
+  const allMonths=(label,headers,cell)=>`<section><h3 class="ops-title">${label}</h3><div class="annual-table-frame"><table class="annual-matrix ops-table"><thead><tr>
+    <th scope="col">月份</th>${headers.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(d=>`<tr${d.month===open?' class="annual-now"':''}><th scope="row">${d.month} 月${d.month===open?'<small>當月未結</small>':''}</th>${cell(d)}</tr>`).join('')}</tbody></table></div></section>`;
+  const metric=(label,key,oldKey)=>allMonths(label,['2025','2026','差額','年增減'],d=>`
+    <td>${money(d[oldKey])}</td><td>${money(d[key])}</td><td>${d.include&&d[key]!==null?signed(d[key]-d[oldKey]):'—'}</td><td>${d.include?signed(yoy(d[key],d[oldKey]),'%',1):'—'}</td>`);
+  document.getElementById('tab-annual').innerHTML=`
+    <div class="annual-heading"><div><h2>2025–${YEAR} 年度比較</h2><p>台中旗艦 2F · ${through?'同期比較：1 至 '+through+' 月':'尚無已結束月份'}</p></div>${annualNavigation()}</div>
+    <div class="ops-controls"><label>比較期間 <select onchange="setAnnualYoyEnd(this.value)" ${!closed?'disabled':''}>${closed?Array.from({length:closed},(_,i)=>`<option value="${i+1}" ${through===i+1?'selected':''}>1 至 ${i+1} 月</option>`).join(''):'<option>尚無已結束月份</option>'}</select></label><button type="button" class="annual-edit-btn" onclick="window.print()">列印／另存 PDF</button></div>
+    ${pending?'<p class="annual-note annual-amber">雲端年度資料尚在同步，請待同步完成再核對。</p>':''}
+    <div class="annual-overview">
+      ${kpi('現收同期年增減',cash)}${kpi('銷課同期年增減',revenue)}
+      <div class="annual-overview-card annual-blue"><div>同期銷課／現收</div><strong>${fmtRate(pairedNow)}</strong><small>2025 同月份 ${fmtRate(pairedThen)} · 變動 ${signed(ratioPp(pairedNow,pairedThen),' 個百分點',1)}<br>兩項皆有資料：${pairedCash.n}／${through} 個月</small></div>
+      <div class="annual-overview-card"><div>2025 全年基準</div><strong>${fmtRate(ratio(revFull,cashFull))}</strong><small>現收 ${money(cashFull)}<br>銷課 ${money(revFull)} · 現收減銷課 ${signed(cashFull-revFull)}</small></div>
+    </div>
+    <p class="annual-note">同期小計只比較有 2026 實績的同一批月份。月表仍保留 12 個月；當月未結與期間外欄位不列入年增減。</p>
+    <div class="annual-yoy-detail">
+      ${metric('現收業績','cash','oldCash')}
+      ${metric('實際營收（銷課）','revenue','oldRevenue')}
+      ${allMonths('現收－銷課',['2025','2026'],d=>`<td>${signed(d.oldCash-d.oldRevenue)}</td><td>${d.cash!==null&&d.revenue!==null?signed(d.cash-d.revenue):'—'}</td>`)}
+      ${allMonths('銷課／現收比率',['2025','2026','變動（百分點）'],d=>{
+        const old=ratio(d.oldRevenue,d.oldCash), value=ratio(d.revenue,d.cash);
+        return `<td>${fmtRate(old)}</td><td>${fmtRate(value)}</td><td>${d.include?signed(ratioPp(value,old),'',1):'—'}</td>`;
+      })}
+    </div>
+    <p class="annual-footnote">2025 口徑：現收取自損益表「營業收入」，銷課取自課程收入。2026 取自本系統 2F 年度業績，包含已儲存的手動調整。銷課／現收＝銷課收入 ÷ 現收；同期比率以金額加總後相除，並非各月百分比的平均。</p>`;
+}
+
 function renderAnnual() {
   if(annualDept==='overview')return renderAnnualOps();
+  if(annualDept==='yoy')return renderAnnualYoy();
   const data=Array.from({length:12},(_,i)=>annualMonthData(annualDept,i+1));
   const shown=data.filter(d=>d.visible);
   const sum=(key,rows=data)=>rows.reduce((s,d)=>s+(Number(d[key])||0),0);
